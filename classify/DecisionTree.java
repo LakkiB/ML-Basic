@@ -41,7 +41,7 @@ public class DecisionTree extends Predictor{
 
         divideFeatureVectorsBasedOnMean(instances, leftSubTree, rightSubtree, meanOfThisFeature, featureIndex);
 
-        // No way to split?
+        // can't split ?
         if (instances.size() == leftSubTree.size() || instances.size() == rightSubtree.size() || maxDepth == 0) {
             Label majority = populateMajorityLabel(instances);
             return new Node(majority, true);
@@ -101,40 +101,36 @@ public class DecisionTree extends Predictor{
     @Override
     public void train(List<Instance> instances) {
         trainingInstances = instances;
-        rootNode = this.buildDecisionTree(instances, 4);
+        rootNode = this.buildDecisionTree(instances, 8);
     }
 
     @Override
     public Label predict(Instance instance) {
-        Node treeNodeD = rootNode;
+        Node treeNode = rootNode;
 
-        while (!treeNodeD.isLeaf && (treeNodeD.left != null || treeNodeD.right != null) ) {
-            if (instance.getFeatureVector().get(treeNodeD.rootFeatureIndex) <= treeNodeD.mean)
-                treeNodeD = treeNodeD.left;
+        while (!treeNode.isLeaf && (treeNode.left != null || treeNode.right != null) ) {
+            double instanceFeatureValue = instance.getFeatureVector().get(treeNode.featureIndex);
+            if (instanceFeatureValue <= treeNode.mean)
+                treeNode = treeNode.left;
             else
-                treeNodeD = treeNodeD.right;
+                treeNode = treeNode.right;
         }
-        return  treeNodeD.prediction;
+        return  treeNode.prediction;
     }
 
 
     class Node implements Serializable {
-        private Double mean;
-        private Integer rootFeatureIndex;
+        private double mean;
+        private int featureIndex;
         private boolean isLeaf;
         private Label prediction;
         Node left;
         Node right;
 
 
-        public Node(Double mean, Integer featureIndex) {
+        public Node(Double mean, int featureIndex) {
             this.mean = mean;
-            this.rootFeatureIndex = featureIndex;
-            this.isLeaf = false;
-            this.prediction = null;
-        }
-
-        public Node() {
+            this.featureIndex = featureIndex;
             this.isLeaf = false;
             this.prediction = null;
         }
@@ -145,15 +141,7 @@ public class DecisionTree extends Predictor{
 
             // why am I doing this?
             this.mean = 99999999.0;
-            this.rootFeatureIndex = -999999999;
+            this.featureIndex = -999999999;
         }
     }
-
-   /* class LeafNode implements Node{
-        Label prediction;
-
-        public LeafNode(Label predictLabel) {
-            prediction = predictLabel;
-        }
-    }*/
 }

@@ -7,17 +7,12 @@ import java.text.MessageFormat;
 import java.util.*;
 
 public class C45DecisionTreeTrainer {
+
     public C45DecisionTreeTrainer() {
         summationOfFeatureValueOverAllLabels = new HashMap<Integer, HashMap<Double, Double>>();
         labelToValueFrequencyMultiMap = new HashMap<Label,HashMap<Integer, HashMap<Double, Double>>>();
         entropiesOfFeatures = new HashMap<Integer, Double>();
     }
-
-   /* @Override
-    public void train(List<Instance> instances) {
-        DecisionTree decisionTree = new DecisionTree();
-        decisionTree.buildDecisionTree(instances, 4);
-    }*/
 
 
     public int getFeatureWithLeastEntropy(List<Instance> instances)
@@ -32,7 +27,7 @@ public class C45DecisionTreeTrainer {
         for(Double value : entropiesOfFeatures.values()) {
             if(value > maxEntropy)
                 maxEntropy = value;
-            if(value == 0)
+            if(value == 0.0)
                 noOfZeros++;
             if(value < minEntropy)
                 minEntropy = value;
@@ -56,7 +51,7 @@ public class C45DecisionTreeTrainer {
                 }
 
                 HashMap<Double, Double> frequencyMap = fvColumnIndexToFrequencyMap.get(keyOfThisFeature);
-                //TODO check if this lworks
+                //TODO check if this works
                 frequencyMap = calculateAbsoluteAndConditionalFrequencies(valueOfThisFeature, keyOfThisFeature, frequencyMap);
                 fvColumnIndexToFrequencyMap.put(keyOfThisFeature, frequencyMap);
             }
@@ -103,8 +98,8 @@ public class C45DecisionTreeTrainer {
 
             for (Integer featureIndex /* A particular feature */ : featuresToValueFrequencyMap.keySet()) {
                 Double entropyOfLabelGivenFeature          = 0.0;
-                Double probabilityOfLabelForThisFeature    = 0.0;
-                Double frequencyOfThisValueForThisLabel    = 0.0;
+                Double probabilityOfLabelForThisFeature;
+                Double frequencyOfThisValueForThisLabel;
                 HashMap<Double, Double> valueAndFrequency  = featuresToValueFrequencyMap.get(featureIndex);
 
                 for (Map.Entry<Double, Double> uniqueFeatureValue : valueAndFrequency.entrySet()) {
@@ -118,7 +113,7 @@ public class C45DecisionTreeTrainer {
                             (Math.log((probabilityOfLabelForThisFeature)/ probabilityOfThisFeatureValue) / Math.log(2)) );
                 }
 
-                recomputeEntropyOfOutputForGivenFeature(featureIndex, entropyOfLabelGivenFeature);
+                recomputeEntropyOfLabelForGivenFeature(featureIndex, entropyOfLabelGivenFeature);
             }
         }
         printEntropyStatistics();
@@ -129,7 +124,7 @@ public class C45DecisionTreeTrainer {
         Double minEntropy = 99999999.0;
         Map.Entry<Integer, Double> featureWithMinEntropy = null;
         for(Map.Entry<Integer, Double> entry: entropiesOfFeatures.entrySet())
-            if(entry.getValue() < minEntropy){
+            if(entry.getValue() <  minEntropy){
                 minEntropy = entry.getValue();
                 featureWithMinEntropy = entry;
             }
@@ -137,14 +132,14 @@ public class C45DecisionTreeTrainer {
         return featureWithMinEntropy.getKey();
     }
 
-    private void recomputeEntropyOfOutputForGivenFeature(Integer featureIndex, Double entropyOfLabelGivenFeature) {
+    private void recomputeEntropyOfLabelForGivenFeature(Integer featureIndex, Double entropyOfLabelGivenFeature) {
         if(entropiesOfFeatures.get(featureIndex) != null)
             entropyOfLabelGivenFeature = entropiesOfFeatures.get(featureIndex) + entropyOfLabelGivenFeature;
         entropiesOfFeatures.put(featureIndex, entropyOfLabelGivenFeature);
     }
 
     private long noOfInstances;
-    private HashMap<Integer, Double> entropiesOfFeatures;  //H(Y|X)
+    private HashMap<Integer, Double> entropiesOfFeatures;  // H(Y|X)
     private HashMap<Integer, HashMap<Double, Double>> summationOfFeatureValueOverAllLabels;
 
     private HashMap<Label/*outputLabel*/,

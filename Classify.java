@@ -36,6 +36,8 @@ public class Classify {
 		String predictions_file = CommandLineUtilities.getOptionValue("predictions_file");
 		String algorithm = CommandLineUtilities.getOptionValue("algorithm");
 		String model_file = CommandLineUtilities.getOptionValue("model_file");
+        String max_depth = CommandLineUtilities.getOptionValue("max_decision_tree_depth");
+
 		
 		if (mode.equalsIgnoreCase("train")) {
 			if (data == null || algorithm == null || model_file == null) {
@@ -167,7 +169,7 @@ public class Classify {
 		registerOption("predictions_file", "String", true, "The predictions file to create.");
 		registerOption("algorithm", "String", true, "The name of the algorithm for training.");
 		registerOption("model_file", "String", true, "The name of the model file to create/load.");
-		
+        registerOption("max_decision_tree_depth", "int", true, "The maximum depth of the decision tree.");
 		// Other options will be added here.
 	}
 

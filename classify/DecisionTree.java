@@ -3,6 +3,7 @@ package cs475.classify;
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.ClassificationLabel;
 import cs475.dataobject.label.Label;
+import cs475.utils.CommandLineUtilities;
 
 import java.io.Serializable;
 import java.util.*;
@@ -10,13 +11,15 @@ import java.util.*;
 public class DecisionTree extends Predictor{
 
     private Node rootNode;
-    private List<Instance> trainingInstances;
     private Label majorityLabel;
+    private Set<Integer> splits;
+    private List<Instance> trainingInstances;
 
     public DecisionTree() {
         rootNode = null;
         majorityLabel = null;
         trainingInstances = null;
+        splits = new HashSet<Integer>();
     }
 
     public Node buildDecisionTree(List<Instance> instances, int maxDepth) {
@@ -36,7 +39,7 @@ public class DecisionTree extends Predictor{
 
         List<Instance> leftSubTree  = new ArrayList<Instance>();
         List<Instance> rightSubtree = new ArrayList<Instance>();
-        int featureIndex        = new C45DecisionTreeTrainer().getFeatureWithLeastEntropy(instances);
+        int featureIndex            = getUniqueFeatureToSplitOn(instances);
         double meanOfThisFeature    = computeMeanForFeature(featureIndex, instances);
 
         divideFeatureVectorsBasedOnMean(instances, leftSubTree, rightSubtree, meanOfThisFeature, featureIndex);
@@ -52,6 +55,17 @@ public class DecisionTree extends Predictor{
         newNode.right = buildDecisionTree(rightSubtree, maxDepth - 1);
 
         return newNode;
+    }
+
+    private int getUniqueFeatureToSplitOn(List<Instance> instances) {
+        int featureIndex;
+        do
+        {
+            featureIndex = new C45DecisionTreeTrainer().getFeatureWithLeastEntropy(instances);
+        } while (splits.contains(featureIndex));
+
+        splits.add(featureIndex);
+        return featureIndex;
     }
 
     private Label populateMajorityLabel(List<Instance> instances) {
@@ -101,7 +115,10 @@ public class DecisionTree extends Predictor{
     @Override
     public void train(List<Instance> instances) {
         trainingInstances = instances;
-        rootNode = this.buildDecisionTree(instances, 8);
+        int max_decision_tree_depth = 8;
+        if (CommandLineUtilities.hasArg("max_decision_tree_depth"))
+            max_decision_tree_depth = CommandLineUtilities.getOptionValueAsInt("max_decision_tree_depth");
+        rootNode = this.buildDecisionTree(instances, max_decision_tree_depth);
     }
 
     @Override

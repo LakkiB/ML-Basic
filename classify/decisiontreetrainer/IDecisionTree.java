@@ -1,4 +1,4 @@
-package cs475.classify;
+package cs475.classify.decisiontreetrainer;
 import cs475.dataobject.Instance;
 
 import java.util.HashMap;

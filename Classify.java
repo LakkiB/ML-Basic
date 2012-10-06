@@ -1,26 +1,25 @@
 package cs475;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.text.MessageFormat;
-import java.util.LinkedList;
-import java.util.List;
-
-import cs475.classify.*;
+import cs475.classify.Predictor;
+import cs475.classify.decisiontreetrainer.DecisionTree;
+import cs475.classify.generalizedlearningmodels.NaiveBayesPredictor;
+import cs475.classify.generalizedlearningmodels.PerceptronPredictor;
+import cs475.classify.generalizedlearningmodels.WinnowPredictor;
+import cs475.classify.simpleclassifier.EvenOddClassifier;
+import cs475.classify.simpleclassifier.MajorityClassifier;
 import cs475.dataobject.Instance;
-import cs475.evaluate.AccuracyEvaluator;
 import cs475.dataobject.label.Label;
+import cs475.evaluate.AccuracyEvaluator;
 import cs475.utils.CommandLineUtilities;
 import cs475.utils.DataReader;
 import cs475.utils.PredictionsWriter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+
+import java.io.*;
+import java.text.MessageFormat;
+import java.util.LinkedList;
+import java.util.List;
 
 public class Classify {
 	static public LinkedList<Option> options = new LinkedList<Option>();
@@ -96,6 +95,12 @@ public class Classify {
             predictor = new EvenOddClassifier();
         else if(algorithm.equalsIgnoreCase("decision_tree"))
             predictor = new DecisionTree();
+        else if(algorithm.equalsIgnoreCase("naive_bayes"))
+            predictor = new NaiveBayesPredictor();
+        else if(algorithm.equalsIgnoreCase("perceptron"))
+            predictor = new PerceptronPredictor();
+        else if (algorithm.equalsIgnoreCase("winnow"))
+            predictor = new WinnowPredictor();
         return predictor;
     }
 
@@ -170,6 +175,10 @@ public class Classify {
 		registerOption("algorithm", "String", true, "The name of the algorithm for training.");
 		registerOption("model_file", "String", true, "The name of the model file to create/load.");
         registerOption("max_decision_tree_depth", "int", true, "The maximum depth of the decision tree.");
+        registerOption("lambda", "double", true, "The level of smoothing for Naive Bayes.");
+        registerOption("thickness", "double", true, "The value of the linear separator thickness.");
+        registerOption("online_learning_rate", "double", true, "The LTU learning rate.");
+        registerOption("online_training_iterations", "int", true, "The number of training iterations for LTU.");
 		// Other options will be added here.
 	}
 

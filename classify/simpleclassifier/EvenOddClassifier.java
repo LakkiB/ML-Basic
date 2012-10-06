@@ -1,5 +1,6 @@
-package cs475.classify;
+package cs475.classify.simpleclassifier;
 
+import cs475.classify.Predictor;
 import cs475.dataobject.label.ClassificationLabel;
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;

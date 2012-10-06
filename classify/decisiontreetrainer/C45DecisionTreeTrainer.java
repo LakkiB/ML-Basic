@@ -1,4 +1,4 @@
-package cs475.classify;
+package cs475.classify.decisiontreetrainer;
 
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;
@@ -32,7 +32,7 @@ public class C45DecisionTreeTrainer {
             if(value < minEntropy)
                 minEntropy = value;
         }
-        System.out.println(MessageFormat.format("max = {0}, min = {1}, noOfZeroes {2}", maxEntropy, minEntropy, noOfZeros));
+        System.out.println(MessageFormat.format("Printing entropy stats: max = {0}, min = {1}, noOfZeroes {2}", maxEntropy, minEntropy, noOfZeros));
     }
 
     private void cookFrequencyOfFeatureValues(List<Instance> instances) {
@@ -51,7 +51,7 @@ public class C45DecisionTreeTrainer {
                 }
 
                 HashMap<Double, Double> frequencyMap = fvColumnIndexToFrequencyMap.get(keyOfThisFeature);
-                //TODO check if this works
+                // check if this works? this works! hurray!
                 frequencyMap = calculateAbsoluteAndConditionalFrequencies(valueOfThisFeature, keyOfThisFeature, frequencyMap);
                 fvColumnIndexToFrequencyMap.put(keyOfThisFeature, frequencyMap);
             }
@@ -121,7 +121,7 @@ public class C45DecisionTreeTrainer {
     }
 
     private Integer returnFeatureWithLeastEntropy(HashMap<Integer, Double> entropiesOfFeatures) {
-        Double minEntropy = 99999999.0;
+        Double minEntropy = Double.MAX_VALUE;
         Map.Entry<Integer, Double> featureWithMinEntropy = null;
         for(Map.Entry<Integer, Double> entry: entropiesOfFeatures.entrySet())
             if(entry.getValue() <  minEntropy){
@@ -129,6 +129,7 @@ public class C45DecisionTreeTrainer {
                 featureWithMinEntropy = entry;
             }
         assert featureWithMinEntropy != null;
+        System.out.println(MessageFormat.format("Feature Index with least entropy: {0}", featureWithMinEntropy.getKey()));
         return featureWithMinEntropy.getKey();
     }
 

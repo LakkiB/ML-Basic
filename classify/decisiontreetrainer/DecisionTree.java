@@ -1,25 +1,26 @@
-package cs475.classify;
+package cs475.classify.decisiontreetrainer;
 
+import cs475.classify.simpleclassifier.MajorityClassifier;
+import cs475.classify.Predictor;
 import cs475.dataobject.Instance;
-import cs475.dataobject.label.ClassificationLabel;
 import cs475.dataobject.label.Label;
 import cs475.utils.CommandLineUtilities;
 
 import java.io.Serializable;
-import java.util.*;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 
-public class DecisionTree extends Predictor{
+public class DecisionTree extends Predictor {
 
     private Node rootNode;
     private Label majorityLabel;
-    private Set<Integer> splits;
     private List<Instance> trainingInstances;
 
     public DecisionTree() {
         rootNode = null;
         majorityLabel = null;
-        trainingInstances = null;
-        splits = new HashSet<Integer>();
+        trainingInstances = new ArrayList<Instance>();
     }
 
     public Node buildDecisionTree(List<Instance> instances, int maxDepth) {
@@ -27,14 +28,8 @@ public class DecisionTree extends Predictor{
         // no instances to work on?
         if (instances.size() == 0) {
             majorityLabel = populateMajorityLabel(trainingInstances);
+            System.out.println(MessageFormat.format("No instances to work on. Returning leaf with majority label {0}", majorityLabel));
             return  new Node(majorityLabel, true);
-        }
-
-        // All labels are equal?
-        boolean allLabelsEqual = checkIfAllLabelsAreEqual(instances);
-        if (allLabelsEqual) {
-            Label predictLabel = predictLabelWhenAllLabelsAreEqual(instances, allLabelsEqual);
-            return new Node(predictLabel, true);
         }
 
         List<Instance> leftSubTree  = new ArrayList<Instance>();
@@ -47,8 +42,23 @@ public class DecisionTree extends Predictor{
         // can't split ?
         if (instances.size() == leftSubTree.size() || instances.size() == rightSubtree.size() || maxDepth == 0) {
             Label majority = populateMajorityLabel(instances);
+            System.out.println(MessageFormat.format(MessageFormat.format
+                    ("Can''t split anymore. skewed? maxDepth is {0}. Returning leaf with majority label {0}", maxDepth), majority));
             return new Node(majority, true);
         }
+
+        System.out.println(MessageFormat.format("left subtree size = {0}, right subtree size = {1}", leftSubTree.size(), rightSubtree.size()));
+
+        // All labels are equal?
+        boolean allLabelsEqual = checkIfAllLabelsAreEqual(instances);
+        if (allLabelsEqual) {
+            Label predictLabel = predictLabelWhenAllLabelsAreEqual(instances, allLabelsEqual);
+            System.out.println(MessageFormat.format("All labels are equal. Returning leaf with majority label {0}", predictLabel));
+            return new Node(predictLabel, true);
+        }
+
+        removeFeatureFromFeatureVector(instances, featureIndex);
+
         // Build decision tree
         Node newNode = new Node(meanOfThisFeature, featureIndex);
         newNode.left = buildDecisionTree(leftSubTree, maxDepth - 1);
@@ -58,14 +68,12 @@ public class DecisionTree extends Predictor{
     }
 
     private int getUniqueFeatureToSplitOn(List<Instance> instances) {
-        int featureIndex;
-        do
-        {
-            featureIndex = new C45DecisionTreeTrainer().getFeatureWithLeastEntropy(instances);
-        } while (splits.contains(featureIndex));
+        return new C45DecisionTreeTrainer().getFeatureWithLeastEntropy(instances);
+    }
 
-        splits.add(featureIndex);
-        return featureIndex;
+    private void removeFeatureFromFeatureVector(List<Instance> instances, int featureIndex) {
+        for(Instance instance: instances)
+            instance.getFeatureVector().getFeatureVectorKeys().remove(featureIndex);
     }
 
     private Label populateMajorityLabel(List<Instance> instances) {
@@ -75,7 +83,7 @@ public class DecisionTree extends Predictor{
     }
 
     private Label predictLabelWhenAllLabelsAreEqual(List<Instance> instances, boolean allLabelsEqual) {
-        Label predictLabel = new ClassificationLabel(-1);
+        Label predictLabel = null;
         if(allLabelsEqual && instances.listIterator().hasNext())
             predictLabel = instances.listIterator().next().getLabel();
         return predictLabel;
@@ -114,11 +122,26 @@ public class DecisionTree extends Predictor{
 
     @Override
     public void train(List<Instance> instances) {
-        trainingInstances = instances;
+        for(Instance instance : instances)
+            try {
+                // Helps in computing majority label after a particular feature is removed from the data set
+                trainingInstances.add((Instance)instance.clone());
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+        rootNode = this.buildDecisionTree(instances, getMaxDepthArgument());
+        cleanUp();
+    }
+
+    private void cleanUp() {
+        trainingInstances.clear();
+    }
+
+    private int getMaxDepthArgument() {
         int max_decision_tree_depth = 8;
         if (CommandLineUtilities.hasArg("max_decision_tree_depth"))
             max_decision_tree_depth = CommandLineUtilities.getOptionValueAsInt("max_decision_tree_depth");
-        rootNode = this.buildDecisionTree(instances, max_decision_tree_depth);
+        return max_decision_tree_depth;
     }
 
     @Override

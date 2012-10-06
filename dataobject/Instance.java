@@ -1,11 +1,10 @@
 package cs475.dataobject;
 
-import cs475.dataobject.*;
 import cs475.dataobject.label.Label;
 
 import java.io.Serializable;
 
-public class Instance implements Serializable {
+public class Instance implements Serializable, Cloneable {
 
 	Label _label = null;
 	cs475.dataobject.FeatureVector _feature_vector = null;
@@ -30,6 +29,11 @@ public class Instance implements Serializable {
 	public void setFeatureVector(cs475.dataobject.FeatureVector feature_vector) {
 		this._feature_vector = feature_vector;
 	}
-	
-	
+
+    public Object clone() throws CloneNotSupportedException {
+        Instance cloned =  new Instance(this._feature_vector, this.getLabel());
+        super.clone();
+        return cloned;
+    }
+
 }

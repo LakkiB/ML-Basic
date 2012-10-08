@@ -17,9 +17,8 @@ public class FeatureVector implements Serializable {
             featureVector.put(index, value);
 	}
 	
-	public double get(int index) {
-        Double returnVal = featureVector.get(index);
-		return returnVal != null ? returnVal : 0;
+	public Double get(int index) {
+        return featureVector.get(index);// != null ? returnVal : 0;
 	}
 
     public Set<Integer> getFeatureVectorKeys()

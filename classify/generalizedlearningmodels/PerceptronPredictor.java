@@ -11,17 +11,33 @@ public class PerceptronPredictor extends LinearThresholdClassifierBase {
 
     @Override
     public void initializeParametersToDefaults(List<Instance> instances) {
-        for(Integer key : instances.get(0).getFeatureVector().getFeatureVectorKeys())
-            weightVectorW.put(key, 0.0);
+        int n = getTotalNoOfFeatures(instances);
+        for(int i = 1; i <= n ; i++)
+            weightVectorW.put(i, 0.0);
 
         thickness           = 0;
         learningRateEeta    = 1;
         scalarThresholdBeta = 0;
     }
 
+    private int getTotalNoOfFeatures(List<Instance> instances) {
+        int maxIndex = 0;
+        for(Instance instance : instances)
+            for(Integer featureIndex : instance.getFeatureVector().getFeatureVectorKeys())
+                if(featureIndex > maxIndex )
+                    maxIndex = featureIndex;
+        return maxIndex;
+    }
+
     @Override
-    protected void updateWeight(Label prediction, FeatureVector fv, HashMap<Integer, Double> weightVectorW, double learningRate) {
+    protected void updateWeight(Label yi, FeatureVector fv, HashMap<Integer, Double> weightVectorW, double learningRate) {
+       // System.out.println(MessageFormat.format("updating weights: input, predicted label = {0}," +
+               // " weightvector = {1} & learning rate is {2}", yi, weightVectorW, learningRate));
+        double yiValue = yi.getLabelValue() == 0.0? -1: yi.getLabelValue();
         for(Integer key : fv.getFeatureVectorKeys())
-            weightVectorW.put(key, (weightVectorW.get(key) + ( learningRate * prediction.getLabelValue() * fv.get(key) )) );
+        {
+            double oldWeight = weightVectorW.get(key);
+            weightVectorW.put(key, (oldWeight + ( learningRate * yiValue * fv.get(key) )) );
+        }
     }
 }

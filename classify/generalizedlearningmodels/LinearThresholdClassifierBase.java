@@ -29,26 +29,30 @@ public abstract class LinearThresholdClassifierBase extends Predictor{
 
         for(int i = 0; i < noOfLearningIterationsI; ++i)
             for(Instance instance : instances){
-                Label givenLabel    = instance.getLabel();
-                FeatureVector fv    = instance.getFeatureVector();
-                double sumOfWDotX   = 0;
 
-                for(Map.Entry<Integer, Double> fvCell : fv.getEntrySet())
-                    sumOfWDotX += fvCell.getValue() * weightVectorW.get(fvCell.getKey());
+                Label givenLabel            = instance.getLabel();
+                FeatureVector fv            = instance.getFeatureVector();
+                double summationOfWDotX     = 0;
 
-                Label prediction = makePrediction(sumOfWDotX, scalarThresholdBeta, thickness);
+                for(Map.Entry<Integer, Double> fvCell : fv.getEntrySet()){
+                    double weight = weightVectorW.get(fvCell.getKey());
+                    summationOfWDotX += fvCell.getValue() * weight;
+                }
 
-                if(prediction.getLabelValue() != givenLabel.getLabelValue())
-                    updateWeight(prediction, fv, weightVectorW, learningRateEeta);
+                Label prediction = makePrediction(summationOfWDotX, scalarThresholdBeta, thickness);
+                if(prediction.getLabelValue() != givenLabel.getLabelValue()){
+                    updateWeight(givenLabel, fv, weightVectorW, learningRateEeta);
+                }
             }
     }
 
-    private Label makePrediction(double sumOfWDotX, double scalarThresholdBeta, double thickness) {
+    private Label makePrediction(double summationOfWDotX, double scalarThresholdBeta, double thickness) {
+
         Label prediction;
-        if(sumOfWDotX >= scalarThresholdBeta + thickness)
+        if(summationOfWDotX >= scalarThresholdBeta + thickness)
             prediction = new ClassificationLabel(1);
-        else if(sumOfWDotX <= scalarThresholdBeta - thickness)
-            prediction = new ClassificationLabel(-1);
+        else if(summationOfWDotX <= scalarThresholdBeta - thickness)
+            prediction = new ClassificationLabel(0);
         else
             prediction = new ClassificationLabel(0);
         return prediction;
@@ -56,16 +60,24 @@ public abstract class LinearThresholdClassifierBase extends Predictor{
 
     @Override
     public Label predict(Instance instance) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        Double summationOfWDotX = 0.0;
+        for(Map.Entry<Integer, Double> fvCell : instance.getFeatureVector().getEntrySet()) {
+            double weight = weightVectorW.get(fvCell.getKey());
+            summationOfWDotX += fvCell.getValue() * weight;
+        }
+
+        return makePrediction(summationOfWDotX, scalarThresholdBeta, thickness);
     }
 
     private void initializeParametersIfArgumentsProvided() {
         if (CommandLineUtilities.hasArg("online_learning_rate"))
             learningRateEeta = CommandLineUtilities.getOptionValueAsFloat("online_learning_rate");
 
+        noOfLearningIterationsI = 4;
         if (CommandLineUtilities.hasArg("online_training_iterations"))
             noOfLearningIterationsI = CommandLineUtilities.getOptionValueAsInt("online_training_iterations");
 
+        thickness = 0;
         if (CommandLineUtilities.hasArg("thickness"))
             thickness = CommandLineUtilities.getOptionValueAsFloat("thickness") ;
     }

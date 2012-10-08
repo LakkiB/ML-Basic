@@ -31,9 +31,8 @@ public class Instance implements Serializable, Cloneable {
 	}
 
     public Object clone() throws CloneNotSupportedException {
-        Instance cloned =  new Instance(this._feature_vector, this.getLabel());
+        Instance cloned =  new Instance((FeatureVector)this._feature_vector.clone(), this.getLabel());
         super.clone();
         return cloned;
     }
-
 }

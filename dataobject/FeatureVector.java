@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class FeatureVector implements Serializable {
+public class FeatureVector implements Serializable, Cloneable {
 
     public FeatureVector() {
         featureVector = new HashMap<Integer, Double>();
@@ -30,6 +30,14 @@ public class FeatureVector implements Serializable {
     {
         return featureVector.entrySet();
     }
+
+    public Object clone() throws CloneNotSupportedException {
+        FeatureVector cloned =  new FeatureVector();
+        cloned.featureVector = (HashMap<Integer, Double>)this.featureVector.clone();
+        super.clone();
+        return cloned;
+    }
+
 
     private HashMap<Integer, Double> featureVector;
 }

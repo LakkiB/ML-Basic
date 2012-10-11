@@ -52,7 +52,7 @@ public abstract class LinearThresholdClassifierBase extends Predictor{
         if(summationOfWDotX >= scalarThresholdBeta + thickness)
             prediction = new ClassificationLabel(1);
         else if(summationOfWDotX <= scalarThresholdBeta - thickness)
-            prediction = new ClassificationLabel(0);
+            prediction = new ClassificationLabel(-1);
         else
             prediction = new ClassificationLabel(0);
         return prediction;

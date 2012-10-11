@@ -13,8 +13,7 @@ public class FeatureVector implements Serializable, Cloneable {
 
     public void add(int index, double value) {
         // This is a Sparse vector
-        if (value != 0)
-            featureVector.put(index, value);
+        featureVector.put(index, value);
 	}
 	
 	public Double get(int index) {

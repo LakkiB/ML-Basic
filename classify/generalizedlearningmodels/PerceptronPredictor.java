@@ -31,8 +31,6 @@ public class PerceptronPredictor extends LinearThresholdClassifierBase {
 
     @Override
     protected void updateWeight(Label yi, FeatureVector fv, HashMap<Integer, Double> weightVectorW, double learningRate) {
-       // System.out.println(MessageFormat.format("updating weights: input, predicted label = {0}," +
-               // " weightvector = {1} & learning rate is {2}", yi, weightVectorW, learningRate));
         double yiValue = yi.getLabelValue() == 0.0? -1: yi.getLabelValue();
         for(Integer key : fv.getFeatureVectorKeys())
         {

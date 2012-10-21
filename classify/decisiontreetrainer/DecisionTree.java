@@ -3,6 +3,7 @@ package cs475.classify.decisiontreetrainer;
 import cs475.classify.simpleclassifier.MajorityClassifier;
 import cs475.classify.Predictor;
 import cs475.dataobject.Instance;
+import cs475.dataobject.label.ClassificationLabel;
 import cs475.dataobject.label.Label;
 import cs475.utils.CommandLineUtilities;
 
@@ -16,6 +17,7 @@ public class DecisionTree extends Predictor {
     private Node rootNode;
     private Label majorityLabel;
     private List<Instance> trainingInstances;
+    private List<Integer> usedFeatures = new ArrayList<Integer>();
 
     public DecisionTree() {
         rootNode = null;
@@ -34,7 +36,7 @@ public class DecisionTree extends Predictor {
 
         List<Instance> leftSubTree  = new ArrayList<Instance>();
         List<Instance> rightSubtree = new ArrayList<Instance>();
-        int featureIndex            = getUniqueFeatureToSplitOn(instances);
+        int featureIndex            = getUniqueFeatureToSplitOn(instances, usedFeatures);
         double meanOfThisFeature    = computeMeanForFeature(featureIndex, instances);
 
         divideFeatureVectorsBasedOnMean(instances, leftSubTree, rightSubtree, meanOfThisFeature, featureIndex);
@@ -67,13 +69,14 @@ public class DecisionTree extends Predictor {
         return newNode;
     }
 
-    private int getUniqueFeatureToSplitOn(List<Instance> instances) {
-        return new C45DecisionTreeTrainer().getFeatureWithLeastEntropy(instances);
+    private int getUniqueFeatureToSplitOn(List<Instance> instances, List<Integer> usedFeatures) {
+        return new C45DecisionTreeTrainer().getFeatureWithLeastEntropy(instances, usedFeatures);
     }
 
     private void removeFeatureFromFeatureVector(List<Instance> instances, int featureIndex) {
-        for(Instance instance: instances)
-            instance.getFeatureVector().getFeatureVectorKeys().remove(featureIndex);
+        //for(Instance instance: instances)
+          //  instance.getFeatureVector().getFeatureVectorKeys().remove(featureIndex);
+        usedFeatures.add(featureIndex);
     }
 
     private Label populateMajorityLabel(List<Instance> instances) {
@@ -92,7 +95,7 @@ public class DecisionTree extends Predictor {
     private void divideFeatureVectorsBasedOnMean
             (List<Instance> instances, List<Instance> leftSubTree, List<Instance> rightSubtree, double mean, int featureIndex) {
         for (Instance instance : instances) {
-            if (instance.getFeatureVector().get(featureIndex) <= mean)
+            if (instance.getFeatureVector().get(featureIndex) != null && instance.getFeatureVector().get(featureIndex) <= mean)
                 leftSubTree.add(instance);
             else
                 rightSubtree.add(instance);
@@ -101,8 +104,10 @@ public class DecisionTree extends Predictor {
 
     private Double computeMeanForFeature(Integer featureIndex, List<Instance> instances) {
         Double sum = 0.0;
-        for (Instance instance:instances)
-            sum += instance.getFeatureVector().get(featureIndex);
+        for (Instance instance : instances){
+            if(instance.getFeatureVector().get(featureIndex) != null)
+                sum += instance.getFeatureVector().get(featureIndex);
+        }
         return  sum/instances.size();
     }
 
@@ -138,7 +143,7 @@ public class DecisionTree extends Predictor {
     }
 
     private int getMaxDepthArgument() {
-        int max_decision_tree_depth = 8;
+        int max_decision_tree_depth = 4;
         if (CommandLineUtilities.hasArg("max_decision_tree_depth"))
             max_decision_tree_depth = CommandLineUtilities.getOptionValueAsInt("max_decision_tree_depth");
         return max_decision_tree_depth;
@@ -149,7 +154,11 @@ public class DecisionTree extends Predictor {
         Node treeNode = rootNode;
 
         while (!treeNode.isLeaf && (treeNode.left != null || treeNode.right != null) ) {
-            double instanceFeatureValue = instance.getFeatureVector().get(treeNode.featureIndex);
+            Double instanceFeatureValue = instance.getFeatureVector().get(treeNode.featureIndex);
+            if(instanceFeatureValue == null) {
+                return treeNode.prediction;
+            }
+
             if (instanceFeatureValue <= treeNode.mean)
                 treeNode = treeNode.left;
             else
@@ -172,7 +181,7 @@ public class DecisionTree extends Predictor {
             this.mean = mean;
             this.featureIndex = featureIndex;
             this.isLeaf = false;
-            this.prediction = null;
+            this.prediction = new ClassificationLabel(1);
         }
 
         public Node(Label majorityLabel, boolean isLeaf) {

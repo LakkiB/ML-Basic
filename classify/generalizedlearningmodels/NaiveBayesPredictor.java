@@ -34,7 +34,6 @@ public class NaiveBayesPredictor extends Predictor {
         computeMeanOfFeatures(trainingInstances);
         convertContinuousFeaturesIntoBinaryBySplitting(instances, meanOfFeatures, featureTypes);
 
-        // re-compute the number of features
         //totalNoOfFeaturesInTrainingSet = getTotalNoOfFeatures(trainingInstances);
         cookFrequencyOfFeatureValues(trainingInstances);
 
@@ -256,14 +255,15 @@ public class NaiveBayesPredictor extends Predictor {
             double logSumOfProbabilitiesForThisFeature,
             Integer feature)
     {
-        Double probabilityOfFeatureGivenLabel = -1.0;
+        Double probabilityOfFeatureGivenLabel = 0.0;
         if(labelsFeatureProbability.get(label).containsKey(feature))
             probabilityOfFeatureGivenLabel = labelsFeatureProbability.get(label).get(feature);
         if(labelsFeatureProbability.get(label).containsKey(feature + totalNoOfFeaturesInTrainingSet))
             probabilityOfFeatureGivenLabel += labelsFeatureProbability.get(label).get(feature + totalNoOfFeaturesInTrainingSet);
 
-        if ( probabilityOfFeatureGivenLabel == null)
-            probabilityOfFeatureGivenLabel = getLambda() / (totalNoOfFeaturesInTrainingSet * getLambda() + noOfFeatureOccurrences.get(feature));
+        if ( probabilityOfFeatureGivenLabel == 0.0)
+            probabilityOfFeatureGivenLabel = getLambda() /
+                    (totalNoOfFeaturesInTrainingSet * 2 /*every feature is split into 2*/ * getLambda() + noOfFeatureOccurrences.get(feature));
 
         logSumOfProbabilitiesForThisFeature += Math.log(probabilityOfFeatureGivenLabel);
 
@@ -291,8 +291,6 @@ public class NaiveBayesPredictor extends Predictor {
             lambda = CommandLineUtilities.getOptionValueAsFloat("lambda");
         return lambda;
     }
-
-    private HashMap<Label , HashMap<Integer, Long>> labelFeatureCount = new HashMap<Label, HashMap<Integer, Long>>();
 
     private int                                      totalNoOfFeaturesInTrainingSet;
     private double                                   lambda;

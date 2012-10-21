@@ -7,6 +7,9 @@ import cs475.classify.generalizedlearningmodels.PerceptronPredictor;
 import cs475.classify.generalizedlearningmodels.WinnowPredictor;
 import cs475.classify.simpleclassifier.EvenOddClassifier;
 import cs475.classify.simpleclassifier.MajorityClassifier;
+import cs475.classify.svm.kernel.GaussianKernelLogisticRegression;
+import cs475.classify.svm.kernel.LinearKernelLogisticRegression;
+import cs475.classify.svm.kernel.PolynomialKernelLogisticRegression;
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;
 import cs475.evaluate.AccuracyEvaluator;
@@ -25,6 +28,9 @@ public class Classify {
 	static public LinkedList<Option> options = new LinkedList<Option>();
 	
 	public static void main(String[] args) throws IOException {
+
+        long start = System.currentTimeMillis();
+
 		// Parse the command line.
 		String[] manditory_args = { "mode"};
 		createCommandLineOptions();
@@ -69,6 +75,10 @@ public class Classify {
 		} else {
 			System.out.println("Requires mode argument.");
 		}
+
+        long elapsedTimeMillis = System.currentTimeMillis() - start;
+        float elapsedTimeSec = elapsedTimeMillis/1000F;
+        System.out.println(MessageFormat.format("Time spent executing = {0}", elapsedTimeSec));
 	}
 
 
@@ -101,6 +111,12 @@ public class Classify {
             predictor = new PerceptronPredictor();
         else if (algorithm.equalsIgnoreCase("winnow"))
             predictor = new WinnowPredictor();
+        else if(algorithm.equalsIgnoreCase("logistic_regression_linear_kernel"))
+            predictor = new LinearKernelLogisticRegression();
+        else if (algorithm.equalsIgnoreCase("logistic_regression_polynomial_kernel"))
+            predictor = new PolynomialKernelLogisticRegression();
+        else if (algorithm.equalsIgnoreCase("logistic_regression_gaussian_kernel"))
+            predictor = new GaussianKernelLogisticRegression();
         return predictor;
     }
 
@@ -179,6 +195,10 @@ public class Classify {
         registerOption("thickness", "double", true, "The value of the linear separator thickness.");
         registerOption("online_learning_rate", "double", true, "The LTU learning rate.");
         registerOption("online_training_iterations", "int", true, "The number of training iterations for LTU.");
+        registerOption("gradient_ascent_learning_rate", "double", true, "The learning rate for logistic regression.");
+        registerOption("polynomial_kernel_exponent", "double", true, "The exponent of the polynomial kernel.");
+        registerOption("gradient_ascent_training_iterations", "int", true, "The number of training iterations.");
+        registerOption("gaussian_kernel_sigma", "double", true, "The sigma of the Gaussian kernel.");
 		// Other options will be added here.
 	}
 

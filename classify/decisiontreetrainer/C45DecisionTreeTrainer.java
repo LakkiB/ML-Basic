@@ -15,13 +15,13 @@ public class C45DecisionTreeTrainer {
     }
 
 
-    public int getFeatureWithLeastEntropy(List<Instance> instances)
+    public int getFeatureWithLeastEntropy(List<Instance> instances, List<Integer> usedFeatures)
     {
         cookFrequencyOfFeatureValues(instances);
-        return getFeatureWithBestIG();
+        return getFeatureWithBestIG(usedFeatures);
     }
 
-    private void printEntropyStatistics() {
+    private void printEntropyStatistics(List<Integer> usedFeatures) {
         Double maxEntropy = 0.0, minEntropy = 0.0;
         int noOfZeros = 0;
         for(Double value : entropiesOfFeatures.values()) {
@@ -32,6 +32,7 @@ public class C45DecisionTreeTrainer {
             if(value < minEntropy)
                 minEntropy = value;
         }
+        System.out.println("Already used features = " + usedFeatures);
         System.out.println(MessageFormat.format("Printing entropy stats: max = {0}, min = {1}, noOfZeroes {2}", maxEntropy, minEntropy, noOfZeros));
     }
 
@@ -90,7 +91,7 @@ public class C45DecisionTreeTrainer {
         summationOfFeatureValueOverAllLabels.put(featureColIndex, absoluteValueFrequencyPair); // for p(x_i)
     }
 
-    private Integer getFeatureWithBestIG() {
+    private Integer getFeatureWithBestIG(List<Integer> usedFeatures) {
         // H(Y|X) =  sum-i=1ton(sumj=1ton(P(yi,xj) log P(yi,xj)/P(xj)))
 
         for (Label label : labelToValueFrequencyMultiMap.keySet()) {
@@ -116,7 +117,10 @@ public class C45DecisionTreeTrainer {
                 recomputeEntropyOfLabelForGivenFeature(featureIndex, entropyOfLabelGivenFeature);
             }
         }
-        printEntropyStatistics();
+        printEntropyStatistics(usedFeatures);
+        for(Integer feature : usedFeatures)
+            entropiesOfFeatures.remove(feature);
+
         return returnFeatureWithLeastEntropy(entropiesOfFeatures);
     }
 

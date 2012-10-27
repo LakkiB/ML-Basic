@@ -14,8 +14,9 @@ public class AccuracyEvaluator extends Evaluator {
         for(Instance instance : instances)
         {
             Label label =  instance.getLabel();
-            if(label != null && predictor.predict(instance).getLabelValue() == label.getLabelValue())
+            if(label != null && predictor.predict(instance).getLabelValue() == label.getLabelValue()) {
                 ++match;
+            }
         }
         return match;
     }

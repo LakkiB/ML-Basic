@@ -34,7 +34,6 @@ public class NaiveBayesPredictor extends Predictor {
         computeMeanOfFeatures(trainingInstances);
         convertContinuousFeaturesIntoBinaryBySplitting(instances, meanOfFeatures, featureTypes);
 
-        //totalNoOfFeaturesInTrainingSet = getTotalNoOfFeatures(trainingInstances);
         cookFrequencyOfFeatureValues(trainingInstances);
 
         computeProbabilityOfLabels(trainingInstances, lambda);
@@ -87,7 +86,8 @@ public class NaiveBayesPredictor extends Predictor {
             List<Instance> instances,
             HashMap<Label, HashMap<Integer, Double>> labelsFeatureProbability,
             double lambda,
-            int noOfFeatures) {
+            int noOfFeatures)
+    {
         for (Label label : labelToDiscreteValueFrequencyMap.keySet()) {
             for (Integer feature : labelToDiscreteValueFrequencyMap.get(label).keySet()) {
                 int countOfFeatureFiring = 0; // No. of times the feature fired for this label.
@@ -144,8 +144,8 @@ public class NaiveBayesPredictor extends Predictor {
     }
 
 
-    private void cookFrequencyOfFeatureValues(List<Instance> instances) {
-
+    private void cookFrequencyOfFeatureValues(List<Instance> instances)
+    {
         for (Instance instance : instances) {
             for (Map.Entry<Integer, Double> uniqueFeature : instance.getFeatureVector().getEntrySet()) {
 
@@ -226,7 +226,8 @@ public class NaiveBayesPredictor extends Predictor {
     }
 
     @Override
-    public Label predict(Instance instance) {
+    public Label predict(Instance instance)
+    {
         for (Label label : labelsFeatureProbability.keySet()) {
 
             double logSumOfProbabilitiesForThisFeature = 0.0;

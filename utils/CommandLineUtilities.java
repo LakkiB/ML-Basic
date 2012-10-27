@@ -1,9 +1,11 @@
 package cs475.utils;
 
-import java.io.*;
-import java.util.*;
-
 import org.apache.commons.cli.*;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.Properties;
 
 /**
  * Some utilities for wrapping the Apache Jakarta CLI for command line parsing.
@@ -22,11 +24,11 @@ public class CommandLineUtilities {
 	 * To use this class, a list of options must be specified and passed to this method.
 	 * Mandatory arguments should be encoded as strings.
 	 * @param args The command line received by main
-	 * @param manditory_args A list of strings that contain the names of mandatory arguments.
+	 * @param mandatoryArgs A list of strings that contain the names of mandatory arguments.
 	 * @param specified_options A list of options to use for this program.
 	 */
 	public static void initCommandLineParameters(String[] args,
-			LinkedList<Option> specified_options, String[] manditory_args) {
+			LinkedList<Option> specified_options, String[] mandatoryArgs) {
 		Options options = new Options();
 		if (specified_options != null)
 			for (Option option : specified_options)
@@ -65,8 +67,8 @@ public class CommandLineUtilities {
 		}
 		
 		boolean failed = false;
-		if (manditory_args != null) {
-			for (String arg : manditory_args) {
+		if (mandatoryArgs != null) {
+			for (String arg : mandatoryArgs) {
 				if (!CommandLineUtilities.hasArg(arg)) {
 					failed = true;
 					System.out.println("Missing argument: " + arg);

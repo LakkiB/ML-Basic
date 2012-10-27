@@ -38,5 +38,5 @@ public class FeatureVector implements Serializable, Cloneable {
     }
 
 
-    private HashMap<Integer, Double> featureVector;
+    public HashMap<Integer, Double> featureVector;
 }

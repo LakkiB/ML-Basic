@@ -4,27 +4,28 @@ import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;
 
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class C45DecisionTreeTrainer {
 
     public C45DecisionTreeTrainer() {
-        summationOfFeatureValueOverAllLabels = new HashMap<Integer, HashMap<Double, Double>>();
+        conditionalEntropy = new HashMap<Integer, Double>();
         labelToValueFrequencyMultiMap = new HashMap<Label,HashMap<Integer, HashMap<Double, Double>>>();
-        entropiesOfFeatures = new HashMap<Integer, Double>();
+        countOfBinaryFeatureFiring = new HashMap<Integer, HashMap<Integer, Integer>>();
     }
 
-
-    public int getFeatureWithLeastEntropy(List<Instance> instances, List<Integer> usedFeatures)
+    public int getFeatureWithLeastEntropy(List<Instance> instances, HashMap<Integer, Boolean> featureTypes, HashMap<Integer, Double> precomputedMeans)
     {
-        cookFrequencyOfFeatureValues(instances);
-        return getFeatureWithBestIG(usedFeatures);
+        cookFrequencyOfFeatureValues(instances, featureTypes, precomputedMeans);
+        return getFeatureWithBestIG( instances);
     }
 
-    private void printEntropyStatistics(List<Integer> usedFeatures) {
+    private void printEntropyStatistics() {
         Double maxEntropy = 0.0, minEntropy = 0.0;
         int noOfZeros = 0;
-        for(Double value : entropiesOfFeatures.values()) {
+        for(Double value : conditionalEntropy.values()) {
             if(value > maxEntropy)
                 maxEntropy = value;
             if(value == 0.0)
@@ -32,120 +33,163 @@ public class C45DecisionTreeTrainer {
             if(value < minEntropy)
                 minEntropy = value;
         }
-        System.out.println("Already used features = " + usedFeatures);
-        System.out.println(MessageFormat.format("Printing entropy stats: max = {0}, min = {1}, noOfZeroes {2}", maxEntropy, minEntropy, noOfZeros));
+        System.out.println(MessageFormat.format("Printing entropy stats: {3} max = {0}, min = {1}, noOfZeroes {2}", maxEntropy, minEntropy, noOfZeros, conditionalEntropy));
     }
 
-    private void cookFrequencyOfFeatureValues(List<Instance> instances) {
-        noOfInstances = instances.size();
-        for (Instance instance : instances) {
-            for (Map.Entry<Integer, Double> uniqueFeature : instance.getFeatureVector().getEntrySet()) {
-                Double valueOfThisFeature = uniqueFeature.getValue();
-                Integer keyOfThisFeature = uniqueFeature.getKey();
 
-                HashMap<Integer, HashMap<Double, Double>> fvColumnIndexToFrequencyMap = labelToValueFrequencyMultiMap.get(instance.getLabel());
+    private void cookFrequencyOfFeatureValues(List<Instance> instances, HashMap<Integer, Boolean> featureTypes, HashMap<Integer, Double> precomputedMeans)
+    {
+        int totalFeatures = featureTypes.size();
 
-                // did not find this label. Create a new label map and add it
-                if(fvColumnIndexToFrequencyMap == null) {
-                    fvColumnIndexToFrequencyMap = new HashMap<Integer, HashMap<Double, Double>>();
-                    labelToValueFrequencyMultiMap.put(instance.getLabel(), fvColumnIndexToFrequencyMap);
+        for (Instance instance : instances)
+        {
+            for (int feature = 1; feature <= totalFeatures; ++feature)
+            {
+                double value = 0;
+                double mean = precomputedMeans.get(feature);
+                if(instance.getFeatureVector().getFeatureVectorKeys().contains(feature))
+                    value = instance.getFeatureVector().get(feature);
+
+                HashMap<Integer, HashMap<Double, Double>> featureValueCountMap;
+
+                if (labelToValueFrequencyMultiMap.containsKey(instance.getLabel())) {
+                    featureValueCountMap = labelToValueFrequencyMultiMap.get(instance.getLabel());
+                } else {
+                    featureValueCountMap = new HashMap<Integer, HashMap<Double, Double>>();
+                    labelToValueFrequencyMultiMap.put(instance.getLabel(), featureValueCountMap);
                 }
 
-                HashMap<Double, Double> frequencyMap = fvColumnIndexToFrequencyMap.get(keyOfThisFeature);
-                // check if this works? this works! hurray!
-                frequencyMap = calculateAbsoluteAndConditionalFrequencies(valueOfThisFeature, keyOfThisFeature, frequencyMap);
-                fvColumnIndexToFrequencyMap.put(keyOfThisFeature, frequencyMap);
+                int binaryFeature; // this is the value that we are counting
+                if ((featureTypes.get(feature) && value == 1) || value > mean) {
+                    value = 1;
+                    binaryFeature = 1;
+                    incrementBinaryInterpretationOfFeature(feature, binaryFeature);
+                } else {
+                    value = 0;
+                    binaryFeature = 0;
+                    incrementBinaryInterpretationOfFeature(feature, binaryFeature);
+                }
+
+                HashMap<Double, Double> valueCountMap = incrementFeatureValueCount(feature, value, featureValueCountMap);
+                featureValueCountMap.put(feature, valueCountMap);
             }
         }
     }
 
-    private HashMap<Double, Double> calculateAbsoluteAndConditionalFrequencies(Double valueOfThisFeature, Integer keyOfThisFeature, HashMap<Double, Double> frequencyMap) {
-        if (frequencyMap != null)
+    private void incrementBinaryInterpretationOfFeature(int feature, int binaryFeature) {
+        if (countOfBinaryFeatureFiring.containsKey(feature))
         {
-            Double frequencyOfThisValue =
-                    (frequencyOfThisValue = frequencyMap.get(valueOfThisFeature)) == null? 0.0
-                            :frequencyOfThisValue;
-
-            // Increment frequency and add it back to the map
-            frequencyOfThisValue++;
-            frequencyMap.put(valueOfThisFeature, frequencyOfThisValue);  // for p(y_i,x_j)
-            incrementAbsoluteFrequencyForThisValue(keyOfThisFeature, valueOfThisFeature); // for P(x_i)
+            if (countOfBinaryFeatureFiring.get(feature).containsKey(binaryFeature))
+            {
+                int cnt = countOfBinaryFeatureFiring.get(feature).get(binaryFeature);
+                cnt++;
+                countOfBinaryFeatureFiring.get(feature).put(binaryFeature, cnt);
+            }
+            else
+            {
+                countOfBinaryFeatureFiring.get(feature).put(binaryFeature, 1);
+            }
         }
         else
         {
-            frequencyMap = new HashMap<Double, Double>();
-            frequencyMap.put(valueOfThisFeature, 1.0 /*initial frequency*/);
-            incrementAbsoluteFrequencyForThisValue(keyOfThisFeature, valueOfThisFeature);
+            HashMap<Integer, Integer> binaryFeaturesWithCount = new HashMap<Integer, Integer>();
+            binaryFeaturesWithCount.put(binaryFeature, 1);
+            countOfBinaryFeatureFiring.put(feature, binaryFeaturesWithCount);
         }
-        return frequencyMap;
     }
 
-    private void incrementAbsoluteFrequencyForThisValue(Integer featureColIndex, Double valueOfThisFeature) {
-        Double absoluteFrequencyOfThisValue;
-        HashMap<Double , Double> absoluteValueFrequencyPair =  summationOfFeatureValueOverAllLabels.get(featureColIndex);
-        if(absoluteValueFrequencyPair == null)
-            absoluteValueFrequencyPair = new HashMap<Double, Double>();
-        if((absoluteFrequencyOfThisValue = absoluteValueFrequencyPair.get(valueOfThisFeature)) == null)
-            absoluteFrequencyOfThisValue = 0.0;
-        absoluteValueFrequencyPair.put(valueOfThisFeature, ++absoluteFrequencyOfThisValue);
-        summationOfFeatureValueOverAllLabels.put(featureColIndex, absoluteValueFrequencyPair); // for p(x_i)
+    private HashMap<Double, Double> incrementFeatureValueCount(
+            int feature,
+            double valueOfThisFeature,
+            HashMap<Integer, HashMap<Double, Double>> featureValueCountMap)
+    {
+        HashMap<Double, Double> valueCountMap;
+        if(featureValueCountMap.containsKey(feature)){
+            valueCountMap = featureValueCountMap.get(feature);
+            double countOfValue =  0;
+
+            if(valueCountMap.containsKey(valueOfThisFeature)) {
+                countOfValue = valueCountMap.get(valueOfThisFeature);
+            }
+            // Increment frequency and add it back to the map
+            countOfValue++;
+            valueCountMap.put(valueOfThisFeature, countOfValue);
+        }
+        else {
+            valueCountMap = new HashMap<Double, Double>();
+            valueCountMap.put(valueOfThisFeature, 1.0 /*initial frequency*/);
+        }
+        return valueCountMap;
     }
 
-    private Integer getFeatureWithBestIG(List<Integer> usedFeatures) {
-        // H(Y|X) =  sum-i=1ton(sumj=1ton(P(yi,xj) log P(yi,xj)/P(xj)))
+    private Integer getFeatureWithBestIG(List<Instance> instances) {
+        for (Label yi : labelToValueFrequencyMultiMap.keySet())
+        {
+            HashMap<Integer, HashMap<Double, Double>> featuresToValueFrequencyMap = labelToValueFrequencyMultiMap.get(yi);
+            for (Integer featureXj /* A particular feature */ : featuresToValueFrequencyMap.keySet())
+            {
+                int countXjHigh = 0, countXjLow = 0, high = 1, low =0;
+                double countXjYiHigh = 0, countXjYiLow = 0, entropyOfYiGivenXi = 0.0;
 
-        for (Label label : labelToValueFrequencyMultiMap.keySet()) {
-            HashMap<Integer, HashMap<Double, Double>> featuresToValueFrequencyMap = labelToValueFrequencyMultiMap.get(label);
+                if(countOfBinaryFeatureFiring.get(featureXj).containsKey(high))
+                    countXjHigh = countOfBinaryFeatureFiring.get(featureXj).get(high);
 
-            for (Integer featureIndex /* A particular feature */ : featuresToValueFrequencyMap.keySet()) {
-                Double entropyOfLabelGivenFeature          = 0.0;
-                Double probabilityOfLabelForThisFeature;
-                Double frequencyOfThisValueForThisLabel;
-                HashMap<Double, Double> valueAndFrequency  = featuresToValueFrequencyMap.get(featureIndex);
+                if(countOfBinaryFeatureFiring.get(featureXj).containsKey(low))
+                    countXjLow = countOfBinaryFeatureFiring.get(featureXj).get(low);
 
-                for (Map.Entry<Double, Double> uniqueFeatureValue : valueAndFrequency.entrySet()) {
-                    Double probabilityOfThisFeatureValue = summationOfFeatureValueOverAllLabels
-                            .get(featureIndex).get(uniqueFeatureValue.getKey())/*frequency*/ / noOfInstances;  // p(xi)
-
-                    frequencyOfThisValueForThisLabel = uniqueFeatureValue.getValue();
-                    probabilityOfLabelForThisFeature = frequencyOfThisValueForThisLabel/noOfInstances;
-
-                    entropyOfLabelGivenFeature += -1 * (probabilityOfLabelForThisFeature *
-                            (Math.log((probabilityOfLabelForThisFeature)/ probabilityOfThisFeatureValue) / Math.log(2)) );
+                HashMap<Double, Double> valueXjCount = featuresToValueFrequencyMap.get(featureXj);
+                for (Map.Entry<Double, Double> valueXj : valueXjCount.entrySet())
+                {
+                    if(valueXj.getKey() == high)
+                        countXjYiHigh += valueXj.getValue();
+                    else
+                        countXjYiLow += valueXj.getValue();
                 }
 
-                recomputeEntropyOfLabelForGivenFeature(featureIndex, entropyOfLabelGivenFeature);
+                double pOfYiXjLow = countXjYiLow / instances.size();
+                double pOfYiXjHigh = countXjYiHigh / instances.size();
+
+                if (countXjYiLow > 0)
+                    entropyOfYiGivenXi -= pOfYiXjLow * Math.log(countXjYiLow / countXjLow) / Math.log(2);
+                if (countXjYiHigh > 0)
+                    entropyOfYiGivenXi -= pOfYiXjHigh * Math.log(countXjYiHigh / countXjHigh) / Math.log(2);
+
+                if (conditionalEntropy.containsKey(featureXj))
+                    entropyOfYiGivenXi = conditionalEntropy.get(featureXj) + entropyOfYiGivenXi;
+
+                conditionalEntropy.put(featureXj, entropyOfYiGivenXi);
             }
         }
-        printEntropyStatistics(usedFeatures);
-        for(Integer feature : usedFeatures)
-            entropiesOfFeatures.remove(feature);
-
-        return returnFeatureWithLeastEntropy(entropiesOfFeatures);
+        printEntropyStatistics();
+        return returnFeatureWithMinEntropy(conditionalEntropy);
     }
 
-    private Integer returnFeatureWithLeastEntropy(HashMap<Integer, Double> entropiesOfFeatures) {
-        Double minEntropy = Double.MAX_VALUE;
-        Map.Entry<Integer, Double> featureWithMinEntropy = null;
-        for(Map.Entry<Integer, Double> entry: entropiesOfFeatures.entrySet())
-            if(entry.getValue() <  minEntropy){
+
+    private Integer returnFeatureWithMinEntropy(HashMap<Integer, Double> entropyOfFeatures) {
+        double minEntropy = Double.MAX_VALUE;
+        int featureWithMinEntropy = entropyOfFeatures.isEmpty()? -1: entropyOfFeatures.keySet().iterator().next();
+
+        for(Map.Entry<Integer, Double> entry : entropyOfFeatures.entrySet())
+        {
+            if(entry.getValue() <  minEntropy)
+            {
                 minEntropy = entry.getValue();
-                featureWithMinEntropy = entry;
             }
-        assert featureWithMinEntropy != null;
-        System.out.println(MessageFormat.format("Feature Index with least entropy: {0}", featureWithMinEntropy.getKey()));
-        return featureWithMinEntropy.getKey();
+        }
+
+        for (Map.Entry<Integer, Double> entry : entropyOfFeatures.entrySet())
+        {
+            if(entry.getValue() == minEntropy) {
+                System.out.println(MessageFormat.format("Feature Index, value with least entropy: {0} {1}", entry.getKey(), entry.getValue() ));
+                return entry.getKey();
+            }
+        }
+        return featureWithMinEntropy;
     }
 
-    private void recomputeEntropyOfLabelForGivenFeature(Integer featureIndex, Double entropyOfLabelGivenFeature) {
-        if(entropiesOfFeatures.get(featureIndex) != null)
-            entropyOfLabelGivenFeature = entropiesOfFeatures.get(featureIndex) + entropyOfLabelGivenFeature;
-        entropiesOfFeatures.put(featureIndex, entropyOfLabelGivenFeature);
-    }
-
-    private long noOfInstances;
-    private HashMap<Integer, Double> entropiesOfFeatures;  // H(Y|X)
-    private HashMap<Integer, HashMap<Double, Double>> summationOfFeatureValueOverAllLabels;
+    private HashMap<Integer, Double> precomputedMeans;
+    private HashMap<Integer, Double> conditionalEntropy;  // H(Y|X)
+    private HashMap<Integer, HashMap<Integer, Integer>> countOfBinaryFeatureFiring;
 
     private HashMap<Label/*outputLabel*/,
             HashMap<Integer /*columnIndex*/,

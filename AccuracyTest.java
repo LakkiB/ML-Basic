@@ -18,6 +18,7 @@ public class AccuracyTest {
             } else {
                 if (f.toString().endsWith(".train")) {
                     String fileName = f.toString().substring(36);
+
                     System.out.println(fileName);
                     //System.exit(0);
                     String dir = path.substring(36);
@@ -26,7 +27,7 @@ public class AccuracyTest {
                             +f.toString()+" -max_decision_tree_depth 4";
                     System.out.println(arguments);
                     Runtime run = Runtime.getRuntime() ;
-                    String cmd = "java -cp E:\\code\\MachineLearning\\ML-CS475\\binary\\out\\production\\ML-1\\cs475\\" +
+                    String cmd = "java -cp " +
                             ":E:\\code\\MachineLearning\\ML-CS475\\lib\\cli\\commons-cli-1.2\\commons-cli-1.2.jar cs475.Classify "
                             + arguments;
                     Process pr = run.exec(cmd) ;

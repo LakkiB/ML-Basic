@@ -9,56 +9,77 @@ import cs475.dataobject.label.RegressionLabel;
 import java.text.MessageFormat;
 import java.util.List;
 
-public class EvenOddClassifier extends Predictor {
+public class EvenOddClassifier extends Predictor
+{
     @Override
-    public void train(List<Instance> instances) {
+    public void train ( List<Instance> instances )
+    {
         // no-op
-
-        /*for (Instance instance : instances)
-            computeEvenOddSums(instance);
-        System.out.println(MessageFormat.format("Training EvenOddClassifier complete. evenSum = {0}, oddSum = {1}", evenSum, oddSum));*/
     }
 
-    private void computeEvenOddSums(Instance instance) {
-        for (int key : instance.getFeatureVector().getFeatureVectorKeys()) {
-           // System.out.println(MessageFormat.format("computeEvenOddSums::Key={0} value = {1}", key, instance.getFeatureVector().get(key)));
-            if (key % 2 == 0)
-                evenSum += instance.getFeatureVector().get(key);
+    private void computeEvenOddSums ( Instance instance )
+    {
+        for ( int key : instance.getFeatureVector().getFeatureVectorKeys() )
+        {
+            // System.out.println(MessageFormat.format("computeEvenOddSums::Key={0} value = {1}", key,
+            // instance.getFeatureVector().get(key)));
+            if ( key % 2 == 0 )
+            {
+                evenSum += instance.getFeatureVector().get( key );
+            }
             else
-                oddSum += instance.getFeatureVector().get(key);
+            {
+                oddSum += instance.getFeatureVector().get( key );
+            }
         }
     }
 
     @Override
-    public Label predict(Instance instance) {
+    public Label predict ( Instance instance )
+    {
 
-        evenSum = 0; oddSum =0;
-        computeEvenOddSums(instance);
-        System.out.println(MessageFormat.format("Training EvenOddClassifier complete. evenSum = {0}, oddSum = {1}", evenSum, oddSum));
+        evenSum = 0;
+        oddSum = 0;
+        computeEvenOddSums( instance );
+        System.out.println( MessageFormat.format( "Training EvenOddClassifier complete. evenSum = {0}, oddSum = {1}",
+                evenSum, oddSum ) );
 
-        if (instance.getLabel() instanceof RegressionLabel) {
+        if ( instance.getLabel() instanceof RegressionLabel )
+        {
             createNewRegressionLabel();
-        } else {
+        }
+        else
+        {
             createNewClassificationLabel();
         }
-        System.out.println(MessageFormat.format("Predicted label {0}", predictedLabel.getLabelValue()));
+        System.out.println( MessageFormat.format( "Predicted label {0}", predictedLabel.getLabelValue() ) );
         return predictedLabel;
     }
 
-    private void createNewClassificationLabel() {
-        System.out.println("Creating new ClassificationLabel based on input instance.");
-        if (evenSum >= oddSum)
-            predictedLabel = new ClassificationLabel(1);
+    private void createNewClassificationLabel ( )
+    {
+        System.out.println( "Creating new ClassificationLabel based on input instance." );
+        if ( evenSum >= oddSum )
+        {
+            predictedLabel = new ClassificationLabel( 1 );
+        }
         else
-            predictedLabel = new ClassificationLabel(0);
+        {
+            predictedLabel = new ClassificationLabel( 0 );
+        }
     }
 
-    private void createNewRegressionLabel() {
-        System.out.println("Creating new RegressionLabel based on input instance.");
-        if (evenSum >= oddSum)
-            predictedLabel = new RegressionLabel(1);
+    private void createNewRegressionLabel ( )
+    {
+        System.out.println( "Creating new RegressionLabel based on input instance." );
+        if ( evenSum >= oddSum )
+        {
+            predictedLabel = new RegressionLabel( 1 );
+        }
         else
-            predictedLabel = new RegressionLabel(0);
+        {
+            predictedLabel = new RegressionLabel( 0 );
+        }
     }
 
     Label predictedLabel;

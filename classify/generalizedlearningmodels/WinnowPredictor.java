@@ -10,33 +10,21 @@ import java.util.List;
 public class WinnowPredictor extends LinearThresholdClassifierBase
 {
     @Override
-    public void initializeParametersToDefaults ( List<Instance> instances )
+    public void initializeParametersToDefaults ()
+    {
+        setLearningRateEeta( 2.0 );
+    }
+
+    protected void initializeWeights(List<Instance> instances)
     {
         int n = getTotalNoOfFeatures( instances );
-        for ( int i = 1 ; i <= n ; ++i )
+        for ( int i = 1 ; i <= n ; i++ )
         {
             getWeightVectorW().put( i, 1.0 );
         }
-
-        setLearningRateEeta( 2.0 );
         scalarThresholdBeta = instances.size() / 2;
     }
 
-    private int getTotalNoOfFeatures ( List<Instance> instances )
-    {
-        int maxIndex = 0;
-        for ( Instance instance : instances )
-        {
-            for ( Integer featureIndex : instance.getFeatureVector().getFeatureVectorKeys() )
-            {
-                if ( featureIndex > maxIndex )
-                {
-                    maxIndex = featureIndex;
-                }
-            }
-        }
-        return maxIndex;
-    }
 
     @Override
     protected void updateWeight ( Label yi, FeatureVector fv, HashMap<Integer, Double> weightVectorW,

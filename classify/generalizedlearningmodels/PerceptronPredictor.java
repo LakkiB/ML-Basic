@@ -11,34 +11,22 @@ public class PerceptronPredictor extends LinearThresholdClassifierBase
 {
 
     @Override
-    public void initializeParametersToDefaults ( List<Instance> instances )
+    public void initializeParametersToDefaults ( )
+    {
+        thickness = 0;
+        setLearningRateEeta( 1 );
+        scalarThresholdBeta = 0;
+    }
+
+    protected void initializeWeights(List<Instance> instances)
     {
         int n = getTotalNoOfFeatures( instances );
         for ( int i = 1 ; i <= n ; i++ )
         {
             getWeightVectorW().put( i, 0.0 );
         }
-
-        thickness = 0;
-        setLearningRateEeta( 1 );
-        scalarThresholdBeta = 0;
     }
 
-    public static int getTotalNoOfFeatures ( List<Instance> instances )
-    {
-        int maxIndex = 0;
-        for ( Instance instance : instances )
-        {
-            for ( Integer featureIndex : instance.getFeatureVector().getFeatureVectorKeys() )
-            {
-                if ( featureIndex > maxIndex )
-                {
-                    maxIndex = featureIndex;
-                }
-            }
-        }
-        return maxIndex;
-    }
 
     @Override
     protected void updateWeight (

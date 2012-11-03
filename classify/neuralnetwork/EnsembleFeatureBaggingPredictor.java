@@ -33,7 +33,7 @@ public class EnsembleFeatureBaggingPredictor extends EnsemblePredictor
 
     @Override
     // implements feature bagging
-    protected List<Instance> getInstancesBasedOnEnsembleAlgorithm ( int k, List<Instance> instances )
+    protected List<Instance> getInstancesForEnsembleTraining ( int classifierIndex, int K, List<Instance> instances )
     {
         int totalFeatures = PerceptronPredictor.getTotalNoOfFeatures(instances);
         List<Instance> featureBag = new ArrayList<Instance>();
@@ -42,9 +42,9 @@ public class EnsembleFeatureBaggingPredictor extends EnsemblePredictor
             try
             {
                 Instance clone = ( Instance ) instance.clone();
-                for ( int feature = 0 ; feature < totalFeatures ; feature++ )
+                for ( int feature = 1 ; feature <= totalFeatures ; feature++ )
                 {
-                    if ( feature % k == k - 1 )
+                    if ( (feature % K != classifierIndex) )
                     {
                         if ( clone.getFeatureVector().getFeatureVectorKeys().contains( feature ) )
                         {

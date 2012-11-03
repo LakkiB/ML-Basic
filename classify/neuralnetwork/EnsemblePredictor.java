@@ -104,7 +104,9 @@ public abstract class EnsemblePredictor extends Predictor
 
         for ( int classifierIndex = 0 ; classifierIndex < noOfClassifiers ; classifierIndex++ )
         {
-            double wDotX = getLinearCombinationWDotX( instance.getFeatureVector(), classifierWeightVector.get( classifierIndex ) );
+            double wDotX = getLinearCombinationWDotX( instance.getFeatureVector(),
+                    classifierWeightVector.get( classifierIndex ) );
+
             if ( yi.getLabelValue() == 1 )
             {
                 weights.put( classifierIndex, weights.get( classifierIndex ) + ensembleLearningRate * g( wDotX ) );
@@ -113,17 +115,24 @@ public abstract class EnsemblePredictor extends Predictor
             {
                 weights.put( classifierIndex, weights.get( classifierIndex ) - ensembleLearningRate * g( wDotX ) );
             }
+            else
+            {
+                System.out.println("this should never happen");
+            }
         }
     }
 
 
-    protected abstract List<Instance> getInstancesBasedOnEnsembleAlgorithm( int k , List<Instance> instances);
+    protected abstract List<Instance> getInstancesForEnsembleTraining (
+            int classifier,
+            int k,
+            List<Instance> instances );
 
     protected void trainClassifiers ( List<Instance> instances, int k )
     {
         for ( int classifier = 0 ; classifier < k ; classifier++ )
         {
-            List<Instance> instanceBag = getInstancesBasedOnEnsembleAlgorithm( k, instances );
+            List<Instance> instanceBag = getInstancesForEnsembleTraining( classifier, k, instances );
             PerceptronPredictor perceptron = new PerceptronPredictor();
             perceptron.setLearningRateEeta( 1.0 );
             perceptron.setNoOfLearningIterationsI( 5 );
@@ -140,7 +149,8 @@ public abstract class EnsemblePredictor extends Predictor
         double wDotX = 0;
         for ( int feature : fv.getFeatureVectorKeys() )
         {
-            wDotX += weightVector.get( feature ) * fv.get( feature );
+            if(weightVector.containsKey(feature))
+                wDotX += weightVector.get( feature ) * fv.get( feature );
         }
         return wDotX;
     }

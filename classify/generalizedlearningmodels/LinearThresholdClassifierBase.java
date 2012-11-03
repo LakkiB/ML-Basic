@@ -16,9 +16,52 @@ public abstract class LinearThresholdClassifierBase extends Predictor
     protected LinearThresholdClassifierBase ( )
     {
         setWeightVectorW( new HashMap<Integer, Double>() );
+        initializeParametersToDefaults();
+        initializeParametersIfArgumentsProvided();
     }
 
-    public abstract void initializeParametersToDefaults ( List<Instance> instances );
+
+    private void initializeParametersIfArgumentsProvided ( )
+    {
+        if(this instanceof WinnowPredictor)
+            setLearningRateEeta(2.0);
+        else if (this instanceof PerceptronPredictor)
+            setLearningRateEeta(1.0);
+
+        if (CommandLineUtilities.hasArg("online_learning_rate"))
+            setLearningRateEeta(CommandLineUtilities.getOptionValueAsFloat("online_learning_rate"));
+
+
+        setNoOfLearningIterationsI( 1 );
+        if ( CommandLineUtilities.hasArg( "online_training_iterations" ) )
+        {
+            setNoOfLearningIterationsI( CommandLineUtilities.getOptionValueAsInt( "online_training_iterations" ) );
+        }
+
+        if ( CommandLineUtilities.hasArg( "thickness" ) )
+        {
+            thickness = CommandLineUtilities.getOptionValueAsFloat( "thickness" );
+        }
+    }
+
+    public static int getTotalNoOfFeatures ( List<Instance> instances )
+    {
+        int maxIndex = 0;
+        for ( Instance instance : instances )
+        {
+            for ( Integer featureIndex : instance.getFeatureVector().getFeatureVectorKeys() )
+            {
+                if ( featureIndex > maxIndex )
+                {
+                    maxIndex = featureIndex;
+                }
+            }
+        }
+        return maxIndex;
+    }
+    protected abstract void initializeWeights(List<Instance> instances);
+
+    public abstract void initializeParametersToDefaults ( );
 
     protected abstract void updateWeight ( Label prediction, FeatureVector fv, HashMap<Integer,
             Double> weightVectorW, double learningRate );
@@ -26,8 +69,7 @@ public abstract class LinearThresholdClassifierBase extends Predictor
     @Override
     public void train ( List<Instance> instances )
     {
-        initializeParametersToDefaults( instances );
-        initializeParametersIfArgumentsProvided();
+        initializeWeights(instances);
 
         int learningIterations =  getNoOfLearningIterationsI();
         for ( int i = 0 ; i < learningIterations ; ++i )
@@ -55,8 +97,8 @@ public abstract class LinearThresholdClassifierBase extends Predictor
                 }
             }
         }
-        System.out.println(weightVectorW);
     }
+
 
     protected Label makePrediction ( double wDotX, double scalarThresholdBeta, double thickness )
     {
@@ -77,7 +119,6 @@ public abstract class LinearThresholdClassifierBase extends Predictor
         return prediction;
     }
 
-
     @Override
     public Label predict ( Instance instance )
     {
@@ -97,29 +138,6 @@ public abstract class LinearThresholdClassifierBase extends Predictor
             prediction = new ClassificationLabel(0);
 
         return prediction;
-    }
-
-    private void initializeParametersIfArgumentsProvided ( )
-    {
-        if(this instanceof WinnowPredictor)
-            setLearningRateEeta(2.0);
-        else if (this instanceof PerceptronPredictor)
-            setLearningRateEeta(1.0);
-
-        if (CommandLineUtilities.hasArg("online_learning_rate"))
-            setLearningRateEeta(CommandLineUtilities.getOptionValueAsFloat("online_learning_rate"));
-
-
-        setNoOfLearningIterationsI( 1 );
-        if ( CommandLineUtilities.hasArg( "online_training_iterations" ) )
-        {
-            setNoOfLearningIterationsI( CommandLineUtilities.getOptionValueAsInt( "online_training_iterations" ) );
-        }
-
-        if ( CommandLineUtilities.hasArg( "thickness" ) )
-        {
-            thickness = CommandLineUtilities.getOptionValueAsFloat( "thickness" );
-        }
     }
 
 

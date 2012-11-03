@@ -15,7 +15,7 @@ public class EnsembleInstanceBaggingPredictor extends EnsemblePredictor
         trainClassifiers( instances, noOfClassifiers );
         int trainingIterations = getTrainingIterations();
 
-        while ( trainingIterations-- > 0 )
+        while ( trainingIterations > 0 )
         {
             for ( Instance instance : instances )
             {
@@ -27,18 +27,20 @@ public class EnsembleInstanceBaggingPredictor extends EnsemblePredictor
                     updateWeightOfClassifier( noOfClassifiers, instance );
                 }
             }
+
+            trainingIterations -= 1;
         }
     }
 
 
     @Override
     // Implements Instance bagging
-    protected List<Instance> getInstancesBasedOnEnsembleAlgorithm ( int k, List<Instance> instances )
+    protected List<Instance> getInstancesForEnsembleTraining ( int classifier, int K, List<Instance> instances )
     {
         List<Instance> instanceBag = new ArrayList<Instance>();
-        for ( int i = 0 ; i < instances.size() ; ++i )
+        for ( int i = 0 ; i < instances.size() ; i++ )
         {
-            if ( !( i % k == k-1 ) )
+            if ( !( i % K == classifier ) )
             {
                 instanceBag.add( instances.get( i ) );
             }

@@ -5,43 +5,47 @@ import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;
 import cs475.utils.CommandLineUtilities;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class NaiveBayesPredictor extends Predictor
 {
     public NaiveBayesPredictor ( )
     {
-        lambda = 0.0;
-        featureTypes = new HashMap<Integer, Boolean>();
-        meanOfFeatures = new HashMap<Integer, Double>();
-        trainingInstances = new ArrayList<Instance>();
-        probabilityOfLabels = new HashMap<Label, Double>();
-        noOfFeatureOccurrences = new HashMap<Integer, Integer>();
-        labelsFeatureProbability = new HashMap<Label, HashMap<Integer, Double>>();
-        likelihoodOfLabelGivenFeatures = new HashMap<Label, Double>();
-        labelToDiscreteValueFrequencyMap = new HashMap<Label, HashMap<Integer, HashMap<Double, Double>>>();
+        lambda                          = 0.0;
+        features                        = new HashSet<Integer>();
+        featureTypes                    = new HashMap<Integer, Boolean>();
+        countOfLabels                   = new HashMap<Label, Integer>();
+        meanOfFeatures                  = new HashMap<Integer, Double>();
+        trainingInstances               = new ArrayList<Instance>();
+        probabilityOfLabels             = new HashMap<Label, Double>();
+        labelsFeatureProbability        = new HashMap<Label, HashMap<Integer, Double>>();
+        likelihoodOfLabelGivenFeatures  = new HashMap<Label, Double>();
+        labelToFeatureValueCount        = new HashMap<Label, HashMap<Integer, HashMap<Double, Integer>>>();
+    }
+
+    private void cleanup ()
+    {
+        labelToFeatureValueCount.clear();
     }
 
     @Override
     public void train ( List<Instance> instances )
     {
-
         double lambda = getLambda();
         cloneTrainingInstances( instances );
-        totalNoOfFeaturesInTrainingSet = getTotalNoOfFeatures( trainingInstances );
+        noOfFeatures = getTotalNoOfFeatures( trainingInstances );
 
         makeBinaryOrContinuousFeatureClassification( trainingInstances );
         computeMeanOfFeatures( trainingInstances );
         convertContinuousFeaturesIntoBinaryBySplitting( instances, meanOfFeatures, featureTypes );
 
         cookFrequencyOfFeatureValues( trainingInstances );
+        countLabelsAndCacheIt(trainingInstances);
 
-        computeProbabilityOfLabels( trainingInstances, lambda );
-        computeProbabilityOfFeatureGivenLabels( trainingInstances, labelsFeatureProbability, lambda,
-                getTotalNoOfFeatures( trainingInstances ) );
+        computeProbabilityOfAllLabels( instances, probabilityOfLabels, lambda );
+        computeProbabilityOfFeatureGivenLabels( labelsFeatureProbability, lambda );
+
+        cleanup();
     }
 
     private void cloneTrainingInstances ( List<Instance> instances )
@@ -62,10 +66,8 @@ public class NaiveBayesPredictor extends Predictor
     private void convertContinuousFeaturesIntoBinaryBySplitting (
             List<Instance> instances,
             HashMap<Integer, Double> meanOfFeatures,
-            HashMap<Integer, Boolean> binaryFeatures
-                                                                )
+            HashMap<Integer, Boolean> binaryFeatures )
     {
-
         for ( int i = 0 ; i < instances.size() ; i++ )
         {
             Instance instance = instances.get( i );
@@ -78,13 +80,17 @@ public class NaiveBayesPredictor extends Predictor
                     if ( instance.getFeatureVector().get( feature ) >= meanOfFeatures.get( feature ) )
                     {
                         trainingInstance.getFeatureVector().add( feature, 1 );
-                        trainingInstance.getFeatureVector().add( feature + totalNoOfFeaturesInTrainingSet, 0 );
+                        trainingInstance.getFeatureVector().add( feature + noOfFeatures, 0 );
                     }
                     else
                     {
                         trainingInstance.getFeatureVector().add( feature, 0 );
-                        trainingInstance.getFeatureVector().add( feature + totalNoOfFeaturesInTrainingSet, 1 );
+                        trainingInstance.getFeatureVector().add( feature + noOfFeatures, 1 );
                     }
+                }
+                else
+                {
+                    trainingInstance.getFeatureVector().add(feature + noOfFeatures, 0);
                 }
             }
         }
@@ -95,11 +101,12 @@ public class NaiveBayesPredictor extends Predictor
         int maxIndex = 0;
         for ( Instance instance : instances )
         {
-            for ( Integer featureIndex : instance.getFeatureVector().getFeatureVectorKeys() )
+            for ( Integer feature : instance.getFeatureVector().getFeatureVectorKeys() )
             {
-                if ( featureIndex > maxIndex )
+                features.add(feature);
+                if ( feature > maxIndex )
                 {
-                    maxIndex = featureIndex;
+                    maxIndex = feature;
                 }
             }
         }
@@ -108,37 +115,28 @@ public class NaiveBayesPredictor extends Predictor
 
 
     private void computeProbabilityOfFeatureGivenLabels (
-            List<Instance> instances,
             HashMap<Label, HashMap<Integer, Double>> labelsFeatureProbability,
-            double lambda,
-            int noOfFeatures
-                                                        )
+            double lambda )
     {
-        for ( Label label : labelToDiscreteValueFrequencyMap.keySet() )
+        for ( Label label : labelToFeatureValueCount.keySet() )
         {
-            for ( int feature : labelToDiscreteValueFrequencyMap.get( label ).keySet() )
+            if (! labelsFeatureProbability.containsKey( label ) )
             {
-                int countOfFeatureFiring = 0;
-                HashMap<Double, Double> featureValueFrequency = labelToDiscreteValueFrequencyMap.get( label ).get(
-                        feature );
+                labelsFeatureProbability.put( label, new HashMap<Integer, Double>() );
+            }
 
-                for ( Double aCertainFeatureValue /* xi */  : featureValueFrequency.keySet() )
+            for ( int feature : labelToFeatureValueCount.get( label ).keySet() )
+            {
+                HashMap<Double, Integer> featureValueCount = labelToFeatureValueCount.get( label ).get( feature );
+                int countFiringFeatures = 0;
+                if ( featureValueCount.containsKey( 1.0 ) )
                 {
-                    if ( aCertainFeatureValue != 0 )
-                    {
-                        countOfFeatureFiring += featureValueFrequency.get( aCertainFeatureValue );
-                    }
+                    countFiringFeatures = featureValueCount.get( 1.0 );
                 }
 
-                if ( labelsFeatureProbability.get( label ) == null )
-                {
-                    labelsFeatureProbability.put( label, new HashMap<Integer, Double>() );
-                }
+                double pOfXGivenY = (countFiringFeatures + lambda) / (countOfLabels.get(label) + lambda );
 
-                int size = instances.size();
-                noOfFeatureOccurrences.put( feature, size );
-                labelsFeatureProbability.get( label ).put( feature, ( countOfFeatureFiring + lambda ) / ( size +
-                        noOfFeatures * lambda ) );
+                labelsFeatureProbability.get( label ).put( feature, pOfXGivenY );
             }
         }
     }
@@ -148,15 +146,12 @@ public class NaiveBayesPredictor extends Predictor
         int count = 0;
         for ( Instance instance : instances )
         {
-            if ( instance.getFeatureVector().get( feature ) != null ) count++;
+            if ( instance.getFeatureVector().getFeatureVectorKeys().contains( feature ) )
+            {
+                count++;
+            }
         }
         return count;
-    }
-
-    private void computeProbabilityOfLabels ( List<Instance> instances, double lambda )
-    {
-        HashMap<Label, Integer> sumsOfLabels = new HashMap<Label, Integer>();
-        computeProbabilityOfAllLabels( instances, sumsOfLabels, probabilityOfLabels, lambda );
     }
 
     private void computeMeanOfFeatures ( List<Instance> instances )
@@ -167,28 +162,28 @@ public class NaiveBayesPredictor extends Predictor
 
     private void makeBinaryOrContinuousFeatureClassification ( List<Instance> instances )
     {
-        markAllFeaturesAsNonBinary();
+        markAllFeaturesAsBinary();
 
         for ( Instance instance : instances )
         {
             for ( Integer feature : instance.getFeatureVector().getFeatureVectorKeys() )
             {
-                if ( featureTypes.get( feature ) ) continue; // Already set, nothing to do
+                if ( !featureTypes.get( feature ) ) continue; // Already set, nothing to do
 
                 double featureValue = instance.getFeatureVector().get( feature );
-                if ( featureValue == 0.0 || featureValue == 1.0 )
+                if ( featureValue != 0.0 && featureValue != 1.0 )
                 {
-                    featureTypes.put( feature, true );
+                    featureTypes.put( feature, false );
                 }
             }
         }
     }
 
-    private void markAllFeaturesAsNonBinary ( )
+    private void markAllFeaturesAsBinary ()
     {
-        for ( int i = 1 ; i <= totalNoOfFeaturesInTrainingSet ; i++ )
+        for ( int i = 1 ; i <= noOfFeatures ; i++ )
         {
-            featureTypes.put( i, false );
+            featureTypes.put( i, true );
         }
     }
 
@@ -197,75 +192,50 @@ public class NaiveBayesPredictor extends Predictor
     {
         for ( Instance instance : instances )
         {
-            for ( Map.Entry<Integer, Double> uniqueFeature : instance.getFeatureVector().getEntrySet() )
+            for ( int feature : instance.getFeatureVector().getFeatureVectorKeys() )
             {
+                Double value = instance.getFeatureVector().get(feature);
+                HashMap<Integer, HashMap<Double, Integer>> featureValueCount;
 
-                Integer keyOfThisFeature = uniqueFeature.getKey();
-                Double valueOfThisFeature = uniqueFeature.getValue();
-
-                HashMap<Integer, HashMap<Double, Double>> fvColumnIndexToFrequencyMap;
-                if ( labelToDiscreteValueFrequencyMap.containsKey( instance.getLabel() ) )
+                if ( labelToFeatureValueCount.containsKey( instance.getLabel() ) )
                 {
-                    fvColumnIndexToFrequencyMap = labelToDiscreteValueFrequencyMap.get( instance.getLabel() );
+                    featureValueCount = labelToFeatureValueCount.get( instance.getLabel() );
                 }
                 else
                 {
-                    fvColumnIndexToFrequencyMap = new HashMap<Integer, HashMap<Double, Double>>();
-                    labelToDiscreteValueFrequencyMap.put( instance.getLabel(), fvColumnIndexToFrequencyMap );
+                    featureValueCount = new HashMap<Integer, HashMap<Double, Integer>>();
+                    labelToFeatureValueCount.put( instance.getLabel(), featureValueCount );
                 }
 
-                HashMap<Double, Double> frequencyMap = fvColumnIndexToFrequencyMap.get( keyOfThisFeature );
-                frequencyMap = calculateConditionalFrequencies( valueOfThisFeature, frequencyMap );
-                fvColumnIndexToFrequencyMap.put( keyOfThisFeature, frequencyMap );
+                HashMap<Double, Integer> countMap;
+                if(featureValueCount.containsKey(feature))
+                {
+                    countMap = featureValueCount.get( feature );
+                    int countOfValue = countMap.containsKey( value ) ? countMap.get( value ) : 0;
+                    countOfValue++;
+                    countMap.put( value, countOfValue );
+                }
+                else
+                {
+                    countMap = new HashMap<Double, Integer>();
+                    countMap.put( value, 1 );
+                }
+
+                featureValueCount.put( feature, countMap );
             }
         }
-    }
-
-    private HashMap<Double, Double> calculateConditionalFrequencies (
-            Double valueOfThisFeature,
-            HashMap<Double, Double> frequencyMap
-                                                                    )
-    {
-        if ( frequencyMap != null )
-        {
-            Double frequencyOfThisValue =
-                    frequencyMap.containsKey( valueOfThisFeature ) ? frequencyMap.get( valueOfThisFeature ) : 0.0;
-            // Increment frequency and add it back to the map
-            frequencyOfThisValue++;
-            frequencyMap.put( valueOfThisFeature, frequencyOfThisValue );
-        }
-        else
-        {
-            frequencyMap = new HashMap<Double, Double>();
-            frequencyMap.put( valueOfThisFeature, 1.0 /*initial frequency*/ );
-        }
-        return frequencyMap;
     }
 
 
     private void computeProbabilityOfAllLabels (
             List<Instance> instances,
-            HashMap<Label, Integer> sumsOfLabels,
             HashMap<Label, Double> probabilityOfLabels,
             double lambda )
     {
-        computeSumOfLabels( instances, sumsOfLabels );
-
-        for ( Map.Entry<Label, Integer> labelAndCount : sumsOfLabels.entrySet() )
+        for ( Map.Entry<Label, Integer> labelAndCount : countOfLabels.entrySet() )
         {
             probabilityOfLabels.put( labelAndCount.getKey(),
-                    ( labelAndCount.getValue() + lambda ) / ( instances.size() + lambda * sumsOfLabels.size() ) );
-        }
-    }
-
-
-    private void computeSumOfLabels ( List<Instance> instances, HashMap<Label, Integer> sumsOfLabels )
-    {
-        for ( Instance instance : instances )
-        {
-            Label label = instance.getLabel();
-            int noOfLabels = sumsOfLabels.containsKey( label ) ? sumsOfLabels.get( label ) : 0;
-            sumsOfLabels.put( label, noOfLabels + 1 );
+                    ( labelAndCount.getValue() + lambda ) / ( instances.size() + lambda * countOfLabels.size() ) );
         }
     }
 
@@ -297,68 +267,62 @@ public class NaiveBayesPredictor extends Predictor
     {
         for ( Label label : labelsFeatureProbability.keySet() )
         {
-            double logSumOfProbabilitiesForThisFeature = 0.0;
+            double logSumOfProbabilitiesForFeature = 0;
             double logProbabilityOfThisLabel = Math.log( probabilityOfLabels.get( label ) );
 
-            for ( Integer feature : instance.getFeatureVector().getFeatureVectorKeys() )
+            for ( int feature : instance.getFeatureVector().getFeatureVectorKeys() )
             {
-                if ( meanOfFeatures.containsKey( feature ) )
+                double value = instance.getFeatureVector().get(feature);
+                if ( !features.contains( feature ) )
                 {
-                    double meanOfThisFeature = meanOfFeatures.get( feature );
-                    double featureValueForThisFV = instance.getFeatureVector().get( feature );
-                    // if mean of this feature is greater than the instance's value then it didn't fire.
-                    if ( featureValueForThisFV <= meanOfThisFeature)
-                    {
-                        continue;
-                    }
-                }
-                else
-                {
-                    // If the mean is not found, the feature was not present during training. So, ignore it
                     continue;
                 }
 
-                logSumOfProbabilitiesForThisFeature =
-                        computeSummationOfLogConditionalProbabilitiesOfAllFeatures( label,
-                                logSumOfProbabilitiesForThisFeature, feature );
+                logSumOfProbabilitiesForFeature =
+                        computeSummationOfLogConditionalProbabilitiesOfAllFeatures
+                                ( label, logSumOfProbabilitiesForFeature, feature, value );
             }
-            likelihoodOfLabelGivenFeatures.put( label, logSumOfProbabilitiesForThisFeature +
-                    logProbabilityOfThisLabel );
+
+            likelihoodOfLabelGivenFeatures.put( label, logSumOfProbabilitiesForFeature + logProbabilityOfThisLabel );
         }
         return getLabelWithMaxLikelihood( likelihoodOfLabelGivenFeatures );
     }
 
+
     private double computeSummationOfLogConditionalProbabilitiesOfAllFeatures (
             Label label,
             double logSumOfProbabilitiesForThisFeature,
-            int feature )
+            int feature, double value )
     {
-        double probabilityOfFeatureGivenLabel = getProbabilityOfXConditionedOnY( label, feature );
+        double probabilityOfFeatureGivenLabel = getProbabilityOfXConditionedOnY( label, feature, value );
         if ( probabilityOfFeatureGivenLabel == 0)
         {
-            probabilityOfFeatureGivenLabel = getLambda() /
-                    ( totalNoOfFeaturesInTrainingSet * 2 /*every feature is split into 2*/ * getLambda() +
-                            noOfFeatureOccurrences.get( feature ) );
+            probabilityOfFeatureGivenLabel = getLambda() / (countOfLabels.get(label) + getLambda());
         }
         logSumOfProbabilitiesForThisFeature += Math.log( probabilityOfFeatureGivenLabel );
         return logSumOfProbabilitiesForThisFeature;
     }
 
+
     private Double getProbabilityOfXConditionedOnY (
             Label label,
-            Integer feature )
+            Integer feature, double value )
     {
         double probabilityOfFeatureGivenLabel = 0;
-        if ( labelsFeatureProbability.get( label ).containsKey( feature ) )
+
+        if( featureTypes.get(feature) || value > meanOfFeatures.get(feature))
         {
-            probabilityOfFeatureGivenLabel = labelsFeatureProbability.get( label ).get( feature );
+            if ( labelsFeatureProbability.get( label ).containsKey( feature ) )
+            {
+                probabilityOfFeatureGivenLabel = labelsFeatureProbability.get( label ).get( feature );
+            }
+        }
+        else
+        {
+            if ( labelsFeatureProbability.get( label ).containsKey( feature + noOfFeatures ) )
+                probabilityOfFeatureGivenLabel += labelsFeatureProbability.get( label ).get( feature + noOfFeatures );
         }
 
-        if ( labelsFeatureProbability.get( label ).containsKey( feature + totalNoOfFeaturesInTrainingSet ) )
-        {
-            probabilityOfFeatureGivenLabel += labelsFeatureProbability.get( label ).get( feature +
-                    totalNoOfFeaturesInTrainingSet );
-        }
         return probabilityOfFeatureGivenLabel;
     }
 
@@ -390,17 +354,32 @@ public class NaiveBayesPredictor extends Predictor
         return lambda;
     }
 
-    private int totalNoOfFeaturesInTrainingSet;
+
+    public void countLabelsAndCacheIt ( List<Instance> instances )
+    {
+        for ( Instance instance : instances )
+        {
+            countOfLabels.put( instance.getLabel(), 0 );
+        }
+
+        for ( Instance instance : instances )
+        {
+            countOfLabels.put( instance.getLabel(), countOfLabels.get( instance.getLabel() ) + 1 );
+        }
+    }
+
+    private int noOfFeatures;
     private double lambda;
+    private Set<Integer> features;
+    private HashMap<Label, Integer> countOfLabels;
     private List<Instance> trainingInstances;
-    private HashMap<Label, Double> probabilityOfLabels;       // P(Y)
+    private HashMap<Label, Double> probabilityOfLabels;
     private HashMap<Label, Double> likelihoodOfLabelGivenFeatures;
     private HashMap<Integer, Double> meanOfFeatures;
-    private HashMap<Integer, Integer> noOfFeatureOccurrences;
     private HashMap<Integer, Boolean> featureTypes;
     private HashMap<Label, HashMap<Integer, Double>> labelsFeatureProbability;
 
     private HashMap<Label/*outputLabel*/,
             HashMap<Integer /*columnIndex*/,
-                    HashMap<Double /*Value*/, Double /*frequency*/>>> labelToDiscreteValueFrequencyMap;  // P(Xi|Y=yj) is got from this map
+                    HashMap<Double /*Value*/, Integer /*frequency*/>>> labelToFeatureValueCount;  // P(Xi|Y=yj) is got from this map
 }

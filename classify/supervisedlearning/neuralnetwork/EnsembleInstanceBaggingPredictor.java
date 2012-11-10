@@ -1,4 +1,4 @@
-package cs475.classify.neuralnetwork;
+package cs475.classify.supervisedlearning.neuralnetwork;
 
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;

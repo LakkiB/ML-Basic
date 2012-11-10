@@ -1,4 +1,4 @@
-package cs475.classify.knn;
+package cs475.classify.supervisedlearning.knn;
 
 import cs475.dataobject.FeatureVector;
 import cs475.dataobject.Instance;

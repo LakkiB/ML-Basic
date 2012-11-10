@@ -1,19 +1,20 @@
 package cs475;
 
 import cs475.classify.Predictor;
-import cs475.classify.decisiontreetrainer.DecisionTree;
-import cs475.classify.generalizedlearningmodels.NaiveBayesPredictor;
-import cs475.classify.generalizedlearningmodels.PerceptronPredictor;
-import cs475.classify.generalizedlearningmodels.WinnowPredictor;
-import cs475.classify.knn.DistanceWeightedKNNPredictor;
-import cs475.classify.knn.SimpleKNNPredictor;
-import cs475.classify.neuralnetwork.EnsembleFeatureBaggingPredictor;
-import cs475.classify.neuralnetwork.EnsembleInstanceBaggingPredictor;
-import cs475.classify.simpleclassifier.EvenOddClassifier;
-import cs475.classify.simpleclassifier.MajorityClassifier;
-import cs475.classify.svm.kernel.GaussianKernelLogisticRegression;
-import cs475.classify.svm.kernel.LinearKernelLogisticRegression;
-import cs475.classify.svm.kernel.PolynomialKernelLogisticRegression;
+import cs475.classify.supervisedlearning.decisiontreetrainer.DecisionTree;
+import cs475.classify.supervisedlearning.generalizedlearningmodels.NaiveBayesPredictor;
+import cs475.classify.supervisedlearning.generalizedlearningmodels.PerceptronPredictor;
+import cs475.classify.supervisedlearning.generalizedlearningmodels.WinnowPredictor;
+import cs475.classify.supervisedlearning.knn.DistanceWeightedKNNPredictor;
+import cs475.classify.supervisedlearning.knn.SimpleKNNPredictor;
+import cs475.classify.supervisedlearning.neuralnetwork.EnsembleFeatureBaggingPredictor;
+import cs475.classify.supervisedlearning.neuralnetwork.EnsembleInstanceBaggingPredictor;
+import cs475.classify.supervisedlearning.simpleclassifier.EvenOddClassifier;
+import cs475.classify.supervisedlearning.simpleclassifier.MajorityClassifier;
+import cs475.classify.supervisedlearning.svm.kernel.GaussianKernelLogisticRegression;
+import cs475.classify.supervisedlearning.svm.kernel.LinearKernelLogisticRegression;
+import cs475.classify.supervisedlearning.svm.kernel.PolynomialKernelLogisticRegression;
+import cs475.classify.unsupervisedlearning.LambdaMeansPredictor;
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;
 import cs475.evaluate.AccuracyEvaluator;
@@ -185,6 +186,10 @@ public class Classify
         {
             predictor = new EnsembleFeatureBaggingPredictor();
         }
+        else if(algorithm.equalsIgnoreCase("lambda_means"))
+        {
+            predictor = new LambdaMeansPredictor();
+        }
         return predictor;
     }
 
@@ -289,8 +294,10 @@ public class Classify
         registerOption( "gradient_ascent_training_iterations", "int", true, "The number of training iterations." );
         registerOption( "gaussian_kernel_sigma", "double", true, "The sigma of the Gaussian kernel." );
         registerOption( "k_nn", "int", true, "The value of K for KNN regression." );
-        registerOption( "k_ensemble", "double", true, "The number of classifiers in the ensemble." );
+        registerOption( "k_ensemble", "int", true, "The number of classifiers in the ensemble." );
         registerOption( "ensemble_learning_rate", "double", true, "The ensemble learning rate." );
+        registerOption("cluster_lambda", "double", true, "The value of lambda in lambda-means.");
+        registerOption("clustering_training_iterations", "int", true, "The number of lambda-means EM iterations.");
         // Other options will be added here.
     }
 

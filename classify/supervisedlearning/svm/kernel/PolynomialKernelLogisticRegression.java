@@ -1,4 +1,4 @@
-package cs475.classify.svm.kernel;
+package cs475.classify.supervisedlearning.svm.kernel;
 
 import cs475.dataobject.FeatureVector;
 import cs475.utils.CommandLineUtilities;

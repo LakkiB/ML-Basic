@@ -1,4 +1,4 @@
-package cs475.classify.simpleclassifier;
+package cs475.classify.supervisedlearning.simpleclassifier;
 
 import cs475.classify.Predictor;
 import cs475.dataobject.label.ClassificationLabel;

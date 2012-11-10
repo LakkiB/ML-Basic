@@ -1,4 +1,4 @@
-package cs475.classify.generalizedlearningmodels;
+package cs475.classify.supervisedlearning.generalizedlearningmodels;
 
 import cs475.classify.Predictor;
 import cs475.dataobject.Instance;

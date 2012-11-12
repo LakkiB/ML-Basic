@@ -1,4 +1,4 @@
-package cs475.classify;
+package cs475.classifier;
 
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;

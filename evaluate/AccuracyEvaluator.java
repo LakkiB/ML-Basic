@@ -2,7 +2,7 @@ package cs475.evaluate;
 
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;
-import cs475.classify.Predictor;
+import cs475.classifier.Predictor;
 
 import java.util.List;
 

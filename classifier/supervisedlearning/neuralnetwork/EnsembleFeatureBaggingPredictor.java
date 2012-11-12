@@ -1,6 +1,6 @@
-package cs475.classify.supervisedlearning.neuralnetwork;
+package cs475.classifier.supervisedlearning.neuralnetwork;
 
-import cs475.classify.supervisedlearning.generalizedlearningmodels.PerceptronPredictor;
+import cs475.classifier.supervisedlearning.generalizedlearningmodels.PerceptronPredictor;
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;
 

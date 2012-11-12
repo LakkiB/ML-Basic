@@ -1,4 +1,4 @@
-package cs475.classify.supervisedlearning.decisiontreetrainer;
+package cs475.classifier.supervisedlearning.decisiontreetrainer;
 
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;

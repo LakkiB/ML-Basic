@@ -1,4 +1,4 @@
-package cs475.classify.supervisedlearning.generalizedlearningmodels;
+package cs475.classifier.supervisedlearning.generalizedlearningmodels;
 
 import cs475.dataobject.FeatureVector;
 import cs475.dataobject.Instance;

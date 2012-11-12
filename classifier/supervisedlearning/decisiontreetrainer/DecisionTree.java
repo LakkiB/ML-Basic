@@ -1,7 +1,7 @@
-package cs475.classify.supervisedlearning.decisiontreetrainer;
+package cs475.classifier.supervisedlearning.decisiontreetrainer;
 
-import cs475.classify.Predictor;
-import cs475.classify.supervisedlearning.simpleclassifier.MajorityClassifier;
+import cs475.classifier.Predictor;
+import cs475.classifier.supervisedlearning.simpleclassifier.MajorityClassifier;
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;
 import cs475.utils.CommandLineUtilities;

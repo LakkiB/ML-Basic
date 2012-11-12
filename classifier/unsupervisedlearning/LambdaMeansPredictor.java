@@ -1,6 +1,6 @@
-package cs475.classify.unsupervisedlearning;
+package cs475.classifier.unsupervisedlearning;
 
-import cs475.classify.Predictor;
+import cs475.classifier.Predictor;
 import cs475.dataobject.FeatureVector;
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.ClassificationLabel;
@@ -104,11 +104,11 @@ public class LambdaMeansPredictor extends Predictor
     @Override
     public void train ( List<Instance> instances )
     {
+        numberOfFeatures = UtilityFunctions.getNumberOfFeatures( instances );
+        initializePrototypeAndSetThreshold( instances );
+
         for ( int i = 0 ; i < trainingIterations ; ++i )
         {
-            numberOfFeatures = UtilityFunctions.getNumberOfFeatures( instances );
-            initializePrototypeAndSetThreshold( instances );
-            //computePrototype( getPrototypeVector(), instances );
             // E-Step
             assignInstancesToClusters( instances );
             // M-Step
@@ -129,7 +129,7 @@ public class LambdaMeansPredictor extends Predictor
             }
             thresholdLambda = distancesFromMean / instances.size();
         }
-        addNewClusterPrototype( 1, prototypes, meanVector );
+        addNewClusterPrototype( getClustersCount(), prototypes, meanVector );
     }
 
     private void updateMeanVectors ( HashMap<Integer, FeatureVector> prototypes, List<Instance> instances )
@@ -191,6 +191,7 @@ public class LambdaMeansPredictor extends Predictor
             FeatureVector prototype = instances.get( instanceIndex ).getFeatureVector();
 
             addNewClusterPrototype( cluster, getPrototypeVector(), prototype );
+
             HashMap<Integer, FeatureVector> clusterAssignmentForInstance = getClusterAssignment( instanceIndex );
             clusterAssignmentForInstance.clear();   // remember any instance belongs to
                                                       // only one cluster at any point.

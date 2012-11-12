@@ -1,6 +1,6 @@
-package cs475.classify.supervisedlearning.svm.kernel;
+package cs475.classifier.supervisedlearning.svm.kernel;
 
-import cs475.classify.Predictor;
+import cs475.classifier.Predictor;
 import cs475.dataobject.FeatureVector;
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.ClassificationLabel;

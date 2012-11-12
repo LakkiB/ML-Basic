@@ -1,6 +1,6 @@
-package cs475.classify.supervisedlearning.generalizedlearningmodels;
+package cs475.classifier.supervisedlearning.generalizedlearningmodels;
 
-import cs475.classify.Predictor;
+import cs475.classifier.Predictor;
 import cs475.dataobject.Instance;
 import cs475.dataobject.label.Label;
 import cs475.utils.CommandLineUtilities;

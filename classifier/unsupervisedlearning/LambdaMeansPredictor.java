@@ -110,22 +110,28 @@ public class LambdaMeansPredictor extends Predictor
         for ( int i = 0 ; i < trainingIterations ; ++i )
         {
             // E-Step
+            clusterAssignments.clear();
             assignInstancesToClusters( instances );
             // M-Step
             updateMeanVectors( getPrototypeVector(), instances );
         }
+        cleanup();
+    }
+
+    private void cleanup ()
+    {
+        clusterAssignments.clear();
     }
 
     private void initializePrototypeAndSetThreshold ( List<Instance> instances )
     {
         FeatureVector meanVector = computePrototype( instances );
-
         if(thresholdLambda == 0)
         {
             double distancesFromMean = 0;
             for ( Instance instance : instances )
             {
-                 distancesFromMean += computeEuclidianDistance(instance.getFeatureVector(), meanVector);
+                 distancesFromMean += UtilityFunctions.computeL2Norm( instance.getFeatureVector(), meanVector );
             }
             thresholdLambda = distancesFromMean / instances.size();
         }
@@ -134,7 +140,10 @@ public class LambdaMeansPredictor extends Predictor
 
     private void updateMeanVectors ( HashMap<Integer, FeatureVector> prototypes, List<Instance> instances )
     {
-        for ( int cluster = 0 ; cluster < prototypes.size() ; cluster++ )
+        int noOfClusters = prototypes.size();
+        prototypes.clear();
+
+        for ( int cluster = 0 ; cluster < noOfClusters ; cluster++ )
         {
             List<Instance> clusterInstances = new ArrayList<Instance>();
 
@@ -157,7 +166,7 @@ public class LambdaMeansPredictor extends Predictor
 
             for ( int clusterK : getPrototypeVector().keySet() )
             {
-                double distance = computeEuclidianDistance( instances.get( i ).getFeatureVector(),
+                double distance = UtilityFunctions.computeL2Norm( instances.get( i ).getFeatureVector(),
                         getPrototypeVector().get( clusterK ) );
                 if ( distance < minDistance )
                 {
@@ -222,7 +231,7 @@ public class LambdaMeansPredictor extends Predictor
 
         for ( int clusterK : getPrototypeVector().keySet() )
         {
-            double distance = computeEuclidianDistance( instance.getFeatureVector(),
+            double distance = UtilityFunctions.computeL2Norm( instance.getFeatureVector(),
                     getPrototypeVector().get( clusterK ) );
             if ( distance < minDistance )
             {

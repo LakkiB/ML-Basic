@@ -2,6 +2,7 @@ package cs475.classifier.supervisedlearning.svm.kernel;
 
 import cs475.dataobject.FeatureVector;
 import cs475.utils.CommandLineUtilities;
+import cs475.utils.UtilityFunctions;
 
 
 public class GaussianKernelLogisticRegression extends KernelLogisticRegression {
@@ -15,10 +16,10 @@ public class GaussianKernelLogisticRegression extends KernelLogisticRegression {
         if(gaussianKernelSigma == 0)
             gaussianKernelSigma = 1;
 
-        return Math.exp(-1 * computeSquareNorm(fv1, fv2)/2 * gaussianKernelSigma);
+        return Math.exp(-1 * UtilityFunctions.computeL2Norm( fv1, fv2 )/2 * gaussianKernelSigma);
     }
 
-    private double computeSquareNorm(FeatureVector fv1, FeatureVector fv2)
+   /* private double computeSquareNorm(FeatureVector fv1, FeatureVector fv2)
     {
         double squareNorm = 0;
 
@@ -35,8 +36,7 @@ public class GaussianKernelLogisticRegression extends KernelLogisticRegression {
             if(!fv1.getFeatureVectorKeys().contains(feature))
                 squareNorm += Math.pow(0 - fv2.get(feature), 2);
         }
-        return squareNorm;
-    }
-
+        return Math.sqrt(squareNorm);
+    }*/
 
 }

@@ -77,7 +77,10 @@ public abstract class KNNPredictor extends Predictor
 
     protected int getNumberOfNearestNeighbors ( )
     {
-        int kNearestNeighbors = 5;
+        if(kNearestNeighbors >= DEFAULT_KNN)
+            return kNearestNeighbors;
+
+        kNearestNeighbors = DEFAULT_KNN;
         if ( CommandLineUtilities.hasArg( "k_nn" ) )
         {
             kNearestNeighbors = CommandLineUtilities.getOptionValueAsInt( "k_nn" );
@@ -85,6 +88,8 @@ public abstract class KNNPredictor extends Predictor
         return kNearestNeighbors;
     }
 
+    protected int kNearestNeighbors;
     protected List<Instance> dataset;
     protected Set<Integer> seenFeatures;
+    public static final int DEFAULT_KNN = 5;
 }

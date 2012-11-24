@@ -41,7 +41,7 @@ public class LambdaMeansPredictor extends Predictor
         trainingIterations = clustering_training_iterations;
     }
 
-    private double computeEuclidianDistance ( FeatureVector fv1, FeatureVector fv2 )
+   /* private double computeEuclidianDistance ( FeatureVector fv1, FeatureVector fv2 )
     {
         double distance = 0;
         for ( int i = 1 ; i <= numberOfFeatures ; ++i )
@@ -62,25 +62,26 @@ public class LambdaMeansPredictor extends Predictor
         }
 
         return Math.sqrt( distance );
-    }
+    }*/
 
     private FeatureVector computePrototype ( List<Instance> instances )
     {
-        double distance[] = new double[numberOfFeatures + 1];
+        FeatureVector meanVector = new FeatureVector();
         for ( Instance instance : instances )
         {
             FeatureVector fv = instance.getFeatureVector();
-            for(int i = 0; i<= numberOfFeatures ; ++i)
+            for(int feature : fv.getFeatureVectorKeys())
             {
-                 if(fv.getFeatureVectorKeys().contains(i))
-                     distance[i] += fv.get(i);
+                if(meanVector.getFeatureVectorKeys().contains(feature))
+                    meanVector.add(feature, meanVector.get(feature) + fv.get(feature));
+                else
+                    meanVector.add(feature, fv.get(feature));
             }
         }
 
-        FeatureVector meanVector = new FeatureVector();
-        for( int i = 1; i < distance.length ; ++i )
+        for(int feature : meanVector.getFeatureVectorKeys())
         {
-             meanVector.add( i, distance[ i ] / instances.size() );
+            meanVector.add(feature, meanVector.get(feature)/instances.size());
         }
 
         return meanVector;
@@ -110,8 +111,11 @@ public class LambdaMeansPredictor extends Predictor
         for ( int i = 0 ; i < trainingIterations ; ++i )
         {
             // E-Step
+            // TODO : clear some memory
             clusterAssignments.clear();
+            System.gc();
             assignInstancesToClusters( instances );
+
             // M-Step
             updateMeanVectors( getPrototypeVector(), instances );
         }
@@ -141,7 +145,9 @@ public class LambdaMeansPredictor extends Predictor
     private void updateMeanVectors ( HashMap<Integer, FeatureVector> prototypes, List<Instance> instances )
     {
         int noOfClusters = prototypes.size();
+        // TODO : This should clear-up memory
         prototypes.clear();
+        System.gc();
 
         for ( int cluster = 0 ; cluster < noOfClusters ; cluster++ )
         {
@@ -232,7 +238,8 @@ public class LambdaMeansPredictor extends Predictor
         for ( int clusterK : getPrototypeVector().keySet() )
         {
             double distance = UtilityFunctions.computeL2Norm( instance.getFeatureVector(),
-                    getPrototypeVector().get( clusterK ) );
+                                    getPrototypeVector().get( clusterK ) );
+
             if ( distance < minDistance )
             {
                 minDistance = distance;

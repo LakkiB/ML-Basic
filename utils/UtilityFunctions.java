@@ -33,10 +33,10 @@ public class UtilityFunctions
             {
                 squareNorm += Math.pow(fv1.get(feature) - fv2.get(feature), 2);
             }
-            /*else
+            else
             {
                 squareNorm += Math.pow(fv1.get(feature), 2);
-            }*/
+            }
         }
 
         for(Integer feature : fv2.getFeatureVectorKeys())
@@ -44,6 +44,19 @@ public class UtilityFunctions
             if(!fv1.getFeatureVectorKeys().contains(feature))
                 squareNorm += Math.pow(fv2.get(feature), 2);
         }
+        return Math.sqrt(squareNorm);
+    }
+
+
+    public static double computeL2Norm ( FeatureVector fv )
+    {
+        double squareNorm = 0;
+
+        for(Integer feature : fv.getFeatureVectorKeys())
+        {
+                squareNorm += Math.pow(fv.get(feature), 2);
+        }
+
         return Math.sqrt(squareNorm);
     }
 }

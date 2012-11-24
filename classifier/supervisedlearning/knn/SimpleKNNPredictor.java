@@ -19,8 +19,7 @@ public class SimpleKNNPredictor extends KNNPredictor
             neighborDistanceWithPrediction.put( computeDifferenceNorm( instance.getFeatureVector(),
                     trainingInstance.getFeatureVector() ), trainingInstance.getLabel() );
         }
-        Label prediction = predictLabel( getNumberOfNearestNeighbors(), neighborDistanceWithPrediction );
-        return prediction;
+        return predictLabel( getNumberOfNearestNeighbors(), neighborDistanceWithPrediction );
     }
 
     protected Label predictLabel ( int k, SortedMap<Double, Label> neighborDistanceWithPrediction )

@@ -29,6 +29,10 @@ public class GaussianKernelLogisticRegression extends KernelLogisticRegression {
             {
                 squareNorm += Math.pow(fv1.get(feature) - fv2.get(feature), 2);
             }
+            else
+            {
+                squareNorm += Math.pow(fv1.get(feature), 2);
+            }
         }
 
         for(Integer feature : fv2.getFeatureVectorKeys())

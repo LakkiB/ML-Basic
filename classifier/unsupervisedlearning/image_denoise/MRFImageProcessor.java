@@ -521,14 +521,6 @@ public class MRFImageProcessor
     private List<Integer> getNeighborsOfZi ( int[][] hiddenLayerX, int rowIdx, int colIdx )
     {
         List<Integer> neighbors = new ArrayList<Integer>();
-        /*for ( int ii = 0 ; ii < hiddenLayerX.length ; ii++ )
-        {
-            for ( int jj = 0 ; jj < hiddenLayerX[ ii ].length ; jj++ )
-            {
-                if(isConnected(ii, jj, rowIdx, colIdx, numK))
-                    neighbors.add(hiddenLayerX[ii][jj]);
-            }
-        }*/
 
         int rowLimit = Math.min( rowIdx * numK + numK, hiddenLayerX.length % numK == 0 ? hiddenLayerX.length / numK :
                 hiddenLayerX.length / numK + 1 );

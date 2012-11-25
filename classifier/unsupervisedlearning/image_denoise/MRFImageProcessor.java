@@ -72,8 +72,8 @@ public class MRFImageProcessor
         {
             for ( int jj = 0 ; jj < xLayer[ ii ].length ; jj++ )
             {
-                int m = ( int ) Math.floor( ii / numK );
-                int n = ( int ) Math.floor( jj / numK );
+                int m =  ii / numK ;
+                int n =  jj / numK ;
                 zLayer[ m ][ n ] += xLayer[ ii ][ jj ];
             }
         }
@@ -195,8 +195,9 @@ public class MRFImageProcessor
                 for ( int jj = 0 ; jj < zLayer[ ii ].length ; jj++ )
                 {
                     List<Integer> neighborsOfZ = getNeighborsOfZi( xLayer, ii, jj );
-                    int finalColorValue = decideColorForZPixelGS( zLayer[ ii ][ jj ], neighborsOfZ, colorMap );
-                    zLayer[ii][jj] = finalColorValue;
+                    double finalColorValue = neighborsOfZ.size() > 0 ? decideColorForZPixelGS( neighborsOfZ ) :
+                            zLayer[ ii ][ jj ];
+                    zLayer[ ii ][ jj ] = finalColorValue;
                 }
             }
         }
@@ -331,24 +332,28 @@ public class MRFImageProcessor
     }
 
 
-    private int decideColorForZPixelGS (
-            double observedNode,
-            List<Integer> neighbors,
-            HashMap<Integer, Integer> colorMap )
+    private double decideColorForZPixelGS (
+            List<Integer> neighbors )
     {
-        SortedMap<Double, Integer> energies = new TreeMap<Double, Integer>();
-
-        for ( int color : colorMap.keySet() )
+        double avg = 0;
+        for ( int neighbor : neighbors)
         {
-            double energy = 0;
-            for ( int neighbor : neighbors )
-            {
-                energy += (Math.log(1 + Math.abs(neighbor - observedNode)) - 1) * omega;
-            }
-            energies.put( energy, color );
+            avg += neighbor;
         }
+        return avg/neighbors.size();
+        /*SortedMap<Double, Integer> energies = new TreeMap<Double, Integer>();
 
-        return energies.get( energies.firstKey() );
+     for ( int color : colorMap.keySet() )
+     {
+         double energy = 0;
+         for ( int neighbor : neighbors )
+         {
+             energy += (Math.log(1 + Math.abs(neighbor - observedNode)) - 1) * omega;
+         }
+         energies.put( energy, color );
+     }
+
+     return energies.get( energies.firstKey() );*/
     }
 
 
@@ -436,11 +441,11 @@ public class MRFImageProcessor
 
         for ( Integer hiddenNeighbor : hiddenNeighbors )
         {
-            potentialXiXj += ( Math.log( Math.abs( hiddenNodeValue - hiddenNeighbor ) + 1 ) - 1 ) * beta;
+            potentialXiXj += ( Math.log( 1 + Math.abs( hiddenNodeValue - hiddenNeighbor ) ) - 1 ) * beta;
         }
 
-        potentialXiYi = ( ( Math.log( Math.abs( hiddenNodeValue - observedNode ) ) + 1 ) - 1 ) * eta;
-        potentialXiZj = ( ( Math.log( Math.abs( hiddenNodeValue - hiddenLayer2NodeValue ) ) + 1 ) - 1 ) * omega;
+        potentialXiYi = ( ( Math.log(1 + Math.abs( hiddenNodeValue - observedNode ) ) ) - 1 ) * eta;
+        potentialXiZj =  ( Math.log(1 + Math.abs( hiddenNodeValue - hiddenLayer2NodeValue )) - 1 ) * omega;
         double energy = potentialXiXj + potentialXiYi + potentialXiZj;
         return Math.exp( -energy );
     }
@@ -525,8 +530,11 @@ public class MRFImageProcessor
             }
         }*/
 
-        int rowLimit = Math.min( rowIdx * numK + numK, hiddenLayerX.length / numK + numK );
-        int colLimit = Math.min( colIdx * numK + numK, hiddenLayerX[ 0 ].length / numK + numK );
+        int rowLimit = Math.min( rowIdx * numK + numK, hiddenLayerX.length % numK == 0 ? hiddenLayerX.length / numK :
+                hiddenLayerX.length / numK + 1 );
+
+        int colLimit = Math.min( colIdx * numK + numK, hiddenLayerX[ 0 ].length % numK == 0 ? hiddenLayerX[ 0 ]
+                .length / numK : hiddenLayerX[ 0 ].length / numK + 1 );
 
         for ( int i = rowIdx * numK ; i < rowLimit ; i++ )
         {

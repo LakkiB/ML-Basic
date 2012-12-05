@@ -5,18 +5,21 @@ import cs475.utils.CommandLineUtilities;
 import cs475.utils.UtilityFunctions;
 
 
-public class GaussianKernelLogisticRegression extends KernelLogisticRegression {
-    @Override
+public class GaussianKernelLogisticRegression extends KernelLogisticRegression
+{
 
-    protected double kernelFunction(FeatureVector fv1, FeatureVector fv2)
+    public GaussianKernelLogisticRegression ()
     {
-        double gaussianKernelSigma = 1;
-        if (CommandLineUtilities.hasArg("gaussian_kernel_sigma"))
-            gaussianKernelSigma = CommandLineUtilities.getOptionValueAsFloat("gaussian_kernel_sigma");
-        if(gaussianKernelSigma == 0)
-            gaussianKernelSigma = 1;
+        gaussianKernelSigma = 1;
+        if ( CommandLineUtilities.hasArg( "gaussian_kernel_sigma" ) )
+        {
+            gaussianKernelSigma = CommandLineUtilities.getOptionValueAsFloat( "gaussian_kernel_sigma" );
+        }
+    }
 
-        return Math.exp(-1 * UtilityFunctions.computeL2Norm( fv1, fv2 )/2 * gaussianKernelSigma);
+    protected double kernelFunction ( FeatureVector fv1, FeatureVector fv2 )
+    {
+        return Math.exp( -1 * UtilityFunctions.computeL2Norm( fv1, fv2 ) / 2 * gaussianKernelSigma );
     }
 
    /* private double computeSquareNorm(FeatureVector fv1, FeatureVector fv2)
@@ -43,4 +46,5 @@ public class GaussianKernelLogisticRegression extends KernelLogisticRegression {
         return Math.sqrt(squareNorm);
     }*/
 
+    private double gaussianKernelSigma = 1;
 }

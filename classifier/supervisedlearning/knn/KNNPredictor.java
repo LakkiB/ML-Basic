@@ -18,6 +18,13 @@ public abstract class KNNPredictor extends Predictor
     {
         dataset      = new ArrayList<Instance>();
         seenFeatures = new HashSet<Integer>();
+
+        kNearestNeighbors = DEFAULT_KNN;
+        if ( CommandLineUtilities.hasArg( "k_nn" ) )
+        {
+            kNearestNeighbors = CommandLineUtilities.getOptionValueAsInt( "k_nn" );
+            System.out.println("Setting k_nn to " + kNearestNeighbors);
+        }
     }
 
     @Override
@@ -77,14 +84,6 @@ public abstract class KNNPredictor extends Predictor
 
     protected int getNumberOfNearestNeighbors ( )
     {
-        if(kNearestNeighbors >= DEFAULT_KNN)
-            return kNearestNeighbors;
-
-        kNearestNeighbors = DEFAULT_KNN;
-        if ( CommandLineUtilities.hasArg( "k_nn" ) )
-        {
-            kNearestNeighbors = CommandLineUtilities.getOptionValueAsInt( "k_nn" );
-        }
         return kNearestNeighbors;
     }
 

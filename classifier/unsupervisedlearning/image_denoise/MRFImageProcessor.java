@@ -24,7 +24,10 @@ public class MRFImageProcessor
 
     public int[][] denoisifyImage ( int[][] observedImage )
     {
-        switch ( ImageUtils.countColors( observedImage, false ) )
+        int count  =  ImageUtils.countColors( observedImage, false );
+        maxColor = ImageUtils.maxColor( observedImage );
+
+        switch ( count )
         {
             case 1:
                 return observedImage;
@@ -51,6 +54,9 @@ public class MRFImageProcessor
 
     private int[][] denoisifyBlackAndWhiteImage ( int[][] observedImage, boolean useSecondLevel )
     {
+        minColor = 0;
+        colorsAvg = maxColor/2;
+
         if ( useSecondLevel )
         {
             return denoisifyBWImageWith2HiddenLevels( observedImage );
@@ -63,95 +69,43 @@ public class MRFImageProcessor
 
 
     private void initializeHiddenNodesIn2ndLevel (
-            double[][] zLayer,
+            int[][] zLayer,
             int[][] xLayer,
-            HashMap<Integer, Integer> colorMap )
+            int numColors )
     {
-
+        int[][] zBlockCount = new int[ zLayer.length ][ zLayer[ 0 ].length ];
         for ( int ii = 0 ; ii < xLayer.length ; ii++ )
         {
             for ( int jj = 0 ; jj < xLayer[ ii ].length ; jj++ )
             {
-                int m =  ii / numK ;
-                int n =  jj / numK ;
+                int m = ( int ) Math.floor( ii / numK );
+                int n = ( int ) Math.floor( jj / numK );
                 zLayer[ m ][ n ] += xLayer[ ii ][ jj ];
+                zBlockCount[ m ][ n ]++;
             }
         }
 
-        if ( colorMap.size() == 2 )
+        if ( numColors == 2 )
         {
-            if(colorsAvg == 0)
-            {
-                initColorStatsForBWClassification( colorMap );
-            }
-
             for ( int ii = 0 ; ii < zLayer.length ; ii++ )
             {
                 for ( int jj = 0 ; jj < zLayer[ ii ].length ; jj++ )
                 {
-                    double avg = zLayer[ ii ][ jj ] / Math.pow( numK, 2 );
+                    double avg = zLayer[ ii ][ jj ] / zBlockCount[ ii ][ jj ];
                     zLayer[ ii ][ jj ] = avg >= colorsAvg ? maxColor : minColor;
                 }
             }
         }
         else
         {
-            int rLimit = xLayer.length - 1;
-            int cLimit = xLayer[0].length - 1;
-
             for ( int ii = 0 ; ii < zLayer.length ; ii++ )
             {
                 for ( int jj = 0 ; jj < zLayer[ ii ].length ; jj++ )
                 {
-                    int rDen, cDen;
-                    rDen = rLimit - ii * numK >= numK ? numK : numK - ii % numK;
-                    cDen = cLimit - jj * numK >= numK ? numK : numK - jj % numK;
-
-                    zLayer[ ii ][ jj ] /= ( rDen * cDen );
+                    zLayer[ ii ][ jj ] /= zBlockCount[ ii ][ jj ];
                 }
             }
         }
-    }
-
-    private void initColorStatsForBWClassification ( HashMap<Integer, Integer> colorMap )
-    {
-        colorsAvg = getColorAverage( colorMap );
-        maxColor = getMaxColor( colorMap );
-        minColor = getMinColor( colorMap );
-    }
-
-    private double getMaxColor ( HashMap<Integer, Integer> colorMap )
-    {
-        double max = Double.MIN_VALUE;
-        for(int color : colorMap.values())
-        {
-            if(color > max )
-                max = color;
-        }
-        return max;
-    }
-
-
-    private double getMinColor ( HashMap<Integer, Integer> colorMap )
-    {
-        double min = Double.MAX_VALUE;
-        for(int color : colorMap.values())
-        {
-            if(color <= min )
-                min = color;
-        }
-        return min;
-    }
-
-    private double getColorAverage ( HashMap<Integer, Integer> colorMap )
-    {
-        double colAvg = 0;
-        for (Integer col : colorMap.values())
-        {
-            colAvg += col;
-        }
-        colAvg /= colorMap.size();
-        return colAvg;
     }
 
 
@@ -164,16 +118,20 @@ public class MRFImageProcessor
     private int[][] denoisifyGSImageWith2HiddenLevels ( int[][] yLayer )
     {
         int[][] xLayer = new int[ yLayer.length ][ yLayer[ 0 ].length ];
+        int [][] tempXLayer = new int [ yLayer.length ][ yLayer[ 0 ].length ];
+
         int row = ( yLayer.length / numK == yLayer.length / numK + yLayer.length % numK ) ? yLayer.length / numK :
                 yLayer.length / numK + 1;
         int col = ( yLayer[ 0 ].length / numK == yLayer[ 0 ].length / numK + yLayer[ 0 ].length % numK ) ? yLayer[ 0
                 ].length / numK : yLayer[ 0 ].length / numK + 1;
 
-        double[][] zLayer = new double[ row ][ col ];
+        int[][] zLayer = new int[ row ][ col ];
+        int[][] tempZLayer = new int[ row ][ col ];
+
         HashMap<Integer, Integer> colorMap = ImageUtils.createColorMap( yLayer );
 
-        initializeHiddenNodes( xLayer, yLayer );
-        initializeHiddenNodesIn2ndLevel( zLayer, xLayer , colorMap);
+        copyLayer( xLayer, yLayer );
+        initializeHiddenNodesIn2ndLevel( zLayer, xLayer , colorMap.size() );
 
         while ( iterations-- > 0 )
         {
@@ -185,21 +143,26 @@ public class MRFImageProcessor
 
                     List<Integer> neighbors = getNeighbors( xLayer, ii, jj );
                     int finalColorValue = decideColorGreyScaleEx( yLayer[ ii ][ jj ],
-                            zLayer[ zRowIdx][ zColIdx ], colorMap, neighbors );
-                    xLayer[ ii ][ jj ] = finalColorValue;
+                            zLayer[ zRowIdx][ zColIdx ], neighbors );
+                    tempXLayer[ ii ][ jj ] = finalColorValue;
                 }
             }
+
+            copyLayer(xLayer, tempXLayer);
 
             for ( int ii = 0 ; ii < zLayer.length ; ii++ )
             {
                 for ( int jj = 0 ; jj < zLayer[ ii ].length ; jj++ )
                 {
                     List<Integer> neighborsOfZ = getNeighborsOfZi( xLayer, ii, jj );
-                    double finalColorValue = neighborsOfZ.size() > 0 ? decideColorForZPixelGS( neighborsOfZ ) :
+                    int finalColorValue = neighborsOfZ.size() > 0 ? decideColorForZPixelGS( neighborsOfZ ) :
                             zLayer[ ii ][ jj ];
-                    zLayer[ ii ][ jj ] = finalColorValue;
+                    tempZLayer[ ii ][ jj ] = finalColorValue;
                 }
             }
+
+
+            copyLayer(zLayer, tempZLayer);
         }
         return xLayer;
     }
@@ -207,17 +170,20 @@ public class MRFImageProcessor
     private int[][] denoisifyBWImageWith2HiddenLevels ( int[][] yLayer )
     {
         int[][] xLayer = new int[ yLayer.length ][ yLayer[ 0 ].length ];
+        int [][] tempXLayer = new int [ yLayer.length ][ yLayer[ 0 ].length ];
 
         int row = ( yLayer.length / numK == yLayer.length / numK + yLayer.length % numK ) ? yLayer.length / numK :
                 yLayer.length / numK + 1;
         int col = ( yLayer[ 0 ].length / numK == yLayer[ 0 ].length / numK + yLayer[ 0 ].length % numK ) ? yLayer[ 0
                 ].length / numK : yLayer[ 0 ].length / numK + 1;
 
-        double[][] zLayer = new double[ row ][ col ];
+        int[][] zLayer = new int[ row ][ col ];
+        int[][] tempZLayer = new int[ row ][ col ];
+
         HashMap<Integer, Integer> colorMap = ImageUtils.createColorMap( yLayer );
 
-        initializeHiddenNodes( xLayer, yLayer );
-        initializeHiddenNodesIn2ndLevel( zLayer, xLayer, colorMap );
+        copyLayer( xLayer, yLayer );
+        initializeHiddenNodesIn2ndLevel( zLayer, xLayer, colorMap.size());
 
         while ( iterations-- > 0 )
         {
@@ -228,22 +194,24 @@ public class MRFImageProcessor
                     int zRowIdx = ii / numK, zColIdx = jj/numK;
 
                     List<Integer> neighbors = getNeighbors( xLayer, ii, jj );
-                    int finalColorValue = decideColorBorWEx( yLayer[ ii ][ jj ],
-                            zLayer[ zRowIdx][ zColIdx ], colorMap, neighbors );
-                    xLayer[ ii ][ jj ] = finalColorValue;
-
+                    int chosenColor = decideColorBorWEx( yLayer[ ii ][ jj ], zLayer[ zRowIdx ][ zColIdx ],
+                            neighbors );
+                    tempXLayer[ ii ][ jj ] = chosenColor;
                 }
             }
+            copyLayer(xLayer, tempXLayer);
 
             for ( int ii = 0 ; ii < zLayer.length ; ii++ )
             {
                 for ( int jj = 0 ; jj < zLayer[ ii ].length ; jj++ )
                 {
                     List<Integer> neighborsOfZ = getNeighborsOfZi( xLayer, ii, jj );
-                    int finalColorValue = decideColorForZPixelBW( zLayer[ ii ][ jj ], neighborsOfZ, colorMap );
-                    zLayer[ii][jj] = finalColorValue;
+                    int chosenColor = decideColorForZPixelBW( zLayer[ ii ][ jj ], neighborsOfZ );
+                    tempZLayer[ii][jj] = chosenColor;
                 }
             }
+
+            copyLayer(zLayer, tempZLayer);
         }
         return xLayer;
     }
@@ -251,8 +219,8 @@ public class MRFImageProcessor
     private int[][] denoisifyGreyScaleImage ( int[][] observedImage )
     {
         int[][] hiddenNodes = new int[ observedImage.length ][ observedImage[ 0 ].length ];
-        initializeHiddenNodes( hiddenNodes, observedImage );
-        HashMap<Integer, Integer> colorMap = ImageUtils.createColorMap( observedImage );
+        int [][] tempHidden = new int [ observedImage.length ][ observedImage[ 0 ].length ];
+        copyLayer( hiddenNodes, observedImage );
 
         while ( iterations-- > 0 )
         {
@@ -261,10 +229,11 @@ public class MRFImageProcessor
                 for ( int jj = 0 ; jj < hiddenNodes[ ii ].length ; jj++ )
                 {
                     List<Integer> neighbors = getNeighbors( hiddenNodes, ii, jj );
-                    int finalColorValue = decideColorGreyScale( observedImage[ ii ][ jj ], colorMap, neighbors );
-                    hiddenNodes[ ii ][ jj ] = finalColorValue;
+                    int chosenColor = decideColorGreyScale( observedImage[ ii ][ jj ], neighbors );
+                    tempHidden[ ii ][ jj ] = chosenColor;
                 }
             }
+            copyLayer( hiddenNodes, tempHidden );
         }
         return hiddenNodes;
     }
@@ -272,8 +241,8 @@ public class MRFImageProcessor
     private int[][] denoisifyBlackAndWhiteImage ( int[][] observedNodes )
     {
         int[][] hiddenNodes = new int[ observedNodes.length ][ observedNodes[ 0 ].length ];
-        initializeHiddenNodes( hiddenNodes, observedNodes );
-        HashMap<Integer, Integer> colorMap = ImageUtils.createColorMap( observedNodes );
+        int [][] tempHidden = new int [ observedNodes.length ][ observedNodes[ 0 ].length ];
+        copyLayer( hiddenNodes, observedNodes );
 
         while ( iterations-- > 0 )
         {
@@ -282,36 +251,42 @@ public class MRFImageProcessor
                 for ( int jj = 0 ; jj < hiddenNodes[ ii ].length ; jj++ )
                 {
                     List<Integer> neighbors = getNeighbors( hiddenNodes, ii, jj );
-                    int finalState = decideColorBorW( observedNodes[ ii ][ jj ], colorMap, neighbors );
-                    hiddenNodes[ ii ][ jj ] = finalState;
+                    int chosenColor = decideColorBorW( observedNodes[ ii ][ jj ], neighbors );
+                    tempHidden[ ii ][ jj ] = chosenColor;
                 }
             }
+
+            copyLayer( hiddenNodes, tempHidden );
         }
         return hiddenNodes;
     }
 
-    private int decideColorBorW ( int observedNode, HashMap<Integer, Integer> colorMap, List<Integer> neighbors )
+    private int decideColorBorW ( int observedNode, List<Integer> neighbors )
     {
-        SortedMap<Double, Integer> correlations = new TreeMap<Double, Integer>();
+        double minEnergy    = Double.MAX_VALUE;
+        int minEnergyColor  = 0;
 
-        for ( int color : colorMap.keySet() )
+        for ( int color = 0 ; color <= maxColor; color ++  )
         {
-            double correlation = computeJointProbabilityForBAndWPixel( observedNode, colorMap.get( color ), neighbors );
-            correlations.put( correlation, color );
+            double energy = computeTotalEnergyForBAndWPixel( observedNode, color, neighbors );
+            if(energy < minEnergy)
+            {
+                minEnergy = energy;
+                minEnergyColor = color;
+            }
         }
-
-        return correlations.get( correlations.lastKey() );
+        return minEnergyColor;
     }
 
 
     private int decideColorForZPixelBW (
             double observedNode,
-            List<Integer> neighbors,
-            HashMap<Integer, Integer> colorMap )
+            List<Integer> neighbors )
     {
-        SortedMap<Double, Integer> energies = new TreeMap<Double, Integer>();
+        double minEnergy    = Double.MAX_VALUE;
+        int minEnergyColor  = 0;
 
-        for ( int color : colorMap.keySet() )
+        for ( int color = 0; color <= maxColor ; color++ )
         {
             double energy = 0;
             for ( int neighbor : neighbors )
@@ -325,14 +300,18 @@ public class MRFImageProcessor
                     energy += omega;
                 }
             }
-            energies.put( energy, color );
+            if(energy < minEnergy)
+            {
+                minEnergy = energy;
+                minEnergyColor = color;
+            }
         }
 
-        return ( int ) ( energies.get( energies.firstKey() ) >= colorsAvg ? maxColor : minColor );
+        return minEnergyColor;
     }
 
 
-    private double decideColorForZPixelGS (
+    private int decideColorForZPixelGS (
             List<Integer> neighbors )
     {
         double avg = 0;
@@ -340,104 +319,103 @@ public class MRFImageProcessor
         {
             avg += neighbor;
         }
-        return avg/neighbors.size();
-        /*SortedMap<Double, Integer> energies = new TreeMap<Double, Integer>();
-
-     for ( int color : colorMap.keySet() )
-     {
-         double energy = 0;
-         for ( int neighbor : neighbors )
-         {
-             energy += (Math.log(1 + Math.abs(neighbor - observedNode)) - 1) * omega;
-         }
-         energies.put( energy, color );
-     }
-
-     return energies.get( energies.firstKey() );*/
+        return (int)avg/neighbors.size();
     }
 
 
     private int decideColorBorWEx (
             int observedNode,
             double hiddenLayer2NodeValue,
-            HashMap<Integer, Integer> colorMap,
             List<Integer> neighbors )
     {
-        SortedMap<Double, Integer> correlations = new TreeMap<Double, Integer>();
+        double minEnergy    = Double.MAX_VALUE;
+        int minEnergyColor  = -1;
 
-        for ( int color : colorMap.keySet() )
+        for ( int color = 0 ; color <= maxColor; color++ )
         {
-            double correlation = computeJointProbabilityForBAndWPixelEx( observedNode, colorMap.get( color ),
-                    hiddenLayer2NodeValue, neighbors );
-            correlations.put( correlation, color );
+            double energy = computeTotalEnergyForBAndWPixelEx( observedNode, color, hiddenLayer2NodeValue, neighbors );
+            if(energy < minEnergy)
+            {
+                minEnergy    = energy;
+                minEnergyColor  = color;
+            }
         }
-
-        return correlations.get( correlations.lastKey() );
+        return minEnergyColor;
     }
 
 
-    private int decideColorGreyScale ( int observedNode, HashMap<Integer, Integer> colorMap, List<Integer> neighbors )
+    private int decideColorGreyScale ( int observedNode, List<Integer> neighbors )
     {
-        SortedMap<Double, Integer> correlations = new TreeMap<Double, Integer>();
+        int minEnergyColor   = 0 ;
+        double minEnergy     = computeTotalEnergyForGreyScalePixel( observedNode, 0, neighbors );
 
-        for ( int color : colorMap.keySet() )
+        for ( int color = 1 ; color <= maxColor ; color++ )
         {
-            double correlation = computeJointProbabilityForGreyScalePixel( observedNode, colorMap.get( color ),
-                    neighbors );
-            correlations.put( correlation, color );
+            double energy = computeTotalEnergyForGreyScalePixel( observedNode, color, neighbors );
+            if(energy < minEnergy)
+            {
+                minEnergy = energy;
+                minEnergyColor  = color;
+            }
         }
-
-        return correlations.get( correlations.lastKey() );
+        return minEnergyColor;
     }
 
 
     private int decideColorGreyScaleEx (
             int observedNode,
             double hiddenLayer2Node,
-            HashMap<Integer, Integer> colorMap,
             List<Integer> neighbors )
     {
-        SortedMap<Double, Integer> correlations = new TreeMap<Double, Integer>();
+        int minEnergyColor   = 0 ;
+        double minEnergy     = computeTotalEnergyForGreyScalePixel( observedNode, 0, neighbors );
 
-        for ( int color : colorMap.keySet() )
+
+        for ( int color = 1 ; color <= maxColor ; color++ )
         {
-            double correlation = computeJointProbabilityForGreyScalePixelEx( observedNode, colorMap.get( color ),
-                    hiddenLayer2Node,
-                    neighbors );
-
-            correlations.put( correlation, color );
+            double energy = computeTotalEnergyForGreyScalePixelEx( observedNode, color, hiddenLayer2Node, neighbors );
+             if(energy < minEnergy)
+            {
+                minEnergyColor  = color;
+                minEnergy       = energy;
+            }
         }
-
-        return correlations.get( correlations.lastKey() );
+        return minEnergyColor;
     }
 
 
-    private double computeJointProbabilityForGreyScalePixel (
+    private double computeTotalEnergyForGreyScalePixel (
             int observedNode,
             int hiddenNodeValue,
             List<Integer> hiddenNeighbors )
     {
-        double potentialXiXj = 0, potentialXiYi;
+        double potentialXiXj = 0, potentialXiYi, energy;
 
         for ( Integer neighbor : hiddenNeighbors )
         {
-            potentialXiXj += ( Math.log( Math.abs( hiddenNodeValue - neighbor ) + 1 ) - 1 ) *
-                    beta;
+            potentialXiXj += ( Math.log(1 + Math.abs( hiddenNodeValue - neighbor ) ) - 1 ) * beta;
         }
-        potentialXiYi = ( ( Math.log( Math.abs( hiddenNodeValue - observedNode ) ) + 1 ) - 1 ) * eta;
+        potentialXiYi = (  Math.log( 1 + Math.abs( hiddenNodeValue - observedNode ) ) - 1 ) * eta;
 
-        double energy = potentialXiXj + potentialXiYi;
-        return Math.exp( -energy );
+        if(hiddenNeighbors.size() == 0)
+        {
+            energy =  potentialXiYi;
+        }
+        else
+        {
+            energy = potentialXiXj + potentialXiYi;
+        }
+        return energy;
     }
 
 
-    private double computeJointProbabilityForGreyScalePixelEx (
+    private double computeTotalEnergyForGreyScalePixelEx (
             int observedNode,
             double hiddenNodeValue,
             double hiddenLayer2NodeValue,
             List<Integer> hiddenNeighbors )
     {
-        double potentialXiXj = 0, potentialXiYi, potentialXiZj;
+        double potentialXiXj = 0, potentialXiYi, potentialXiZj, energy;
 
         for ( Integer hiddenNeighbor : hiddenNeighbors )
         {
@@ -445,13 +423,24 @@ public class MRFImageProcessor
         }
 
         potentialXiYi = ( ( Math.log(1 + Math.abs( hiddenNodeValue - observedNode ) ) ) - 1 ) * eta;
+
         potentialXiZj =  ( Math.log(1 + Math.abs( hiddenNodeValue - hiddenLayer2NodeValue )) - 1 ) * omega;
-        double energy = potentialXiXj + potentialXiYi + potentialXiZj;
-        return Math.exp( -energy );
+
+        if(hiddenNeighbors.size() == 0)
+        {
+            energy =  potentialXiYi + potentialXiZj;
+        }
+        else
+        {
+            energy = potentialXiXj + potentialXiYi + potentialXiZj;
+        }
+        return energy;
+
+
     }
 
 
-    private double computeJointProbabilityForBAndWPixel (
+    private double computeTotalEnergyForBAndWPixel (
             int observedNode,
             int hiddenNodeValue,
             List<Integer> hiddenNeighbors )
@@ -465,12 +454,11 @@ public class MRFImageProcessor
         }
 
         eta_XiYi = hiddenNodeValue == observedNode ? -eta : eta;
-        double energy = beta_summationXiXj + eta_XiYi;
-        return Math.exp( -energy );
+        return beta_summationXiXj + eta_XiYi;
     }
 
 
-    private double computeJointProbabilityForBAndWPixelEx (
+    private double computeTotalEnergyForBAndWPixelEx (
             int observedNode,
             int hiddenNodeValue,
             double hiddenLayer2NodeValue,
@@ -485,10 +473,10 @@ public class MRFImageProcessor
         }
 
         eta_XiYi = hiddenNodeValue == observedNode ? -eta : eta;
-        omega_XiZj = hiddenNodeValue == hiddenLayer2NodeValue ? -omega : omega;
-        double energy = beta_summationXiXj + eta_XiYi + omega_XiZj;
 
-        return Math.exp( -energy );
+        omega_XiZj = hiddenNodeValue == hiddenLayer2NodeValue ? -omega : omega;
+
+        return beta_summationXiXj + eta_XiYi + omega_XiZj;
     }
 
 
@@ -522,11 +510,9 @@ public class MRFImageProcessor
     {
         List<Integer> neighbors = new ArrayList<Integer>();
 
-        int rowLimit = Math.min( rowIdx * numK + numK, hiddenLayerX.length % numK == 0 ? hiddenLayerX.length / numK :
-                hiddenLayerX.length / numK + 1 );
+        int rowLimit = Math.min( rowIdx * numK + numK, hiddenLayerX.length );
 
-        int colLimit = Math.min( colIdx * numK + numK, hiddenLayerX[ 0 ].length % numK == 0 ? hiddenLayerX[ 0 ]
-                .length / numK : hiddenLayerX[ 0 ].length / numK + 1 );
+        int colLimit = Math.min( colIdx * numK + numK, hiddenLayerX[ 0 ].length );
 
         for ( int i = rowIdx * numK ; i < rowLimit ; i++ )
         {
@@ -539,7 +525,7 @@ public class MRFImageProcessor
     }
 
 
-    private void initializeHiddenNodes ( int[][] hiddenNodes, int[][] observedNodes )
+    private void copyLayer ( int[][] hiddenNodes, int[][] observedNodes )
     {
         for ( int ii = 0 ; ii < observedNodes.length ; ii++ )
         {
@@ -551,8 +537,8 @@ public class MRFImageProcessor
     private double eta;
     private double beta;
     private double omega;
-    private double maxColor;
-    private double minColor;
+    private int maxColor;
+    private int minColor;
     private double colorsAvg;
 
     private int numK;

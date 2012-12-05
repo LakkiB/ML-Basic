@@ -27,7 +27,7 @@ public class DistanceWeightedKNNPredictor extends KNNPredictor
             neighborDistanceWithPrediction.put( computeDifferenceNorm( instance.getFeatureVector(),
                     trainingInstance.getFeatureVector() ), trainingInstance );
         }
-        return predictLabel( getNumberOfNearestNeighbors(), neighborDistanceWithPrediction, instance );
+        return predictLabel( kNearestNeighbors, neighborDistanceWithPrediction, instance );
     }
 
     protected Label predictLabel ( int k, SortedMap<Double, Instance> neighborDistanceWithPrediction,

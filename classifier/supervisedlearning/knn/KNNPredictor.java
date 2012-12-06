@@ -18,7 +18,11 @@ public abstract class KNNPredictor extends Predictor
     {
         dataset      = new ArrayList<Instance>();
         seenFeatures = new HashSet<Integer>();
+    }
 
+    private void setKnn()
+    {
+        System.out.println("In set k_nn");
         kNearestNeighbors = DEFAULT_KNN;
         if ( CommandLineUtilities.hasArg( "k_nn" ) )
         {
@@ -30,6 +34,7 @@ public abstract class KNNPredictor extends Predictor
     @Override
     public void train ( List<Instance> instances )
     {
+        setKnn();
         saveTrainingSetForPrediction( instances );
         saveSeenFeaturesForPrediction(instances);
     }
@@ -80,12 +85,6 @@ public abstract class KNNPredictor extends Predictor
         return Math.sqrt( distance );
     }
 
-
-
-    protected int getNumberOfNearestNeighbors ( )
-    {
-        return kNearestNeighbors;
-    }
 
     protected int kNearestNeighbors;
     protected List<Instance> dataset;

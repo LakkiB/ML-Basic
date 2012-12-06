@@ -25,7 +25,7 @@ public class AccuracyEvaluator extends Evaluator
 
     public double evaluateR ( List<Instance> instances, Predictor predictor )
     {
-        double meanError = 0;
+        double absError = 0;
         int size = 0;
         for ( Instance instance : instances )
         {
@@ -36,10 +36,12 @@ public class AccuracyEvaluator extends Evaluator
             }
 
             Label prediction = predictor.predict( instance );
-            meanError += Math.abs( prediction.getLabelValue() - label.getLabelValue() );
+            /*System.out.println("prediction = " + prediction.getLabelValue());
+            System.out.println("given label = " + label.getLabelValue());*/
+            absError += Math.abs( prediction.getLabelValue() - label.getLabelValue() );
             size++;
         }
-        return meanError/size;
+        return absError/size;
     }
 
 }
